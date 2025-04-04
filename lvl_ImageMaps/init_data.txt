@@ -1,0 +1,8 @@
+20 20  20 80
+200 200 200
+
+0  0 3 1 4
+400 100 2
+
+include/levels/lvl_ImageMaps/initTxtA_data.txt
+include/levels/lvl_ImageMaps/makeImageAndSS_data.txt

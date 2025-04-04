@@ -1,0 +1,23 @@
+wvPlay
+
+260 180
+10 10
+180 20
+50 22 4
+5
+AmpRt  AmpRt
+0.0 1.0 1.0
+lenRt wvLenRt
+10 400 64
+spdRt wvSpeed
+10 400 64
+lenLt wvLenLt
+10 400 128
+spdLt wvSpeed
+10 400 64
+
+0 20
+
+init_controlMS_done
+
+init_MultiControl_done

@@ -1,0 +1,14 @@
+20 20  20 80
+60 60 60
+
+2
+0 255 0 
+0 0 200
+
+include/levels/lvl_Lights/player2_data.txt
+include/levels/lvl_Lights/player4_data.txt
+include/levels/lvl_Lights/DPimages/colors16/blueGuy_a16color16x16_data.txt
+include/levels/lvl_Lights/wvPlay_data.txt
+include/levels/lvl_Lights/pulsePlay_data.txt
+include/levels/lvl_Lights/Mover_data.txt
+include/levels/lvl_Lights/control_data.txt
