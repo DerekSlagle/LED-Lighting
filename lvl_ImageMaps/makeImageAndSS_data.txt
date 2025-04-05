@@ -1,0 +1,5 @@
+0
+2
+images/Images32x32/WindowssSm.png
+images/Images32x32/WindowsSm_SSdata.txt
+4
