@@ -1,9 +1,0 @@
-images/
-
-6
-M484SpaceSoldier_SSdata.txt
-Images32x32/Walls_SSdata.txt
-Images32x32/Windows_SSdata.txt
-Images16x16/group1_SSdata.txt
-Images16x16/boom_SSdata.txt
-Images16x16/lamps_SSdata.txt
