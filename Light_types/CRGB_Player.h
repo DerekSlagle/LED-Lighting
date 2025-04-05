@@ -10,13 +10,17 @@ public:
     uint8_t r = 1, g = 2, b = 3;
 
     // test below next?
-  //  bool operator == ( const Light& Lt ) const
-  //  {
-  //      if( r != Lt.r || g != Lt.g || b != Lt.b ) return false;
-  //      return true;
-  //  }
-  //  bool operator != ( const Light& Lt ) const
-  //  { return !( *this == Lt ); }
+    bool operator == ( const CRGB& Lt ) const
+    {
+        if( r != Lt.r || g != Lt.g || b != Lt.b ) return false;
+        return true;
+    }
+
+    bool operator != ( const CRGB& Lt ) const
+    { return !( *this == Lt ); }
+
+    CRGB(){ r = 1; g = 2; b = 3; }
+    CRGB( uint8_t R, uint8_t G, uint8_t B ){ r = R; g = G; b = B; }
 };
 
 // minimal test for compatible use of the "real" type CRGB
