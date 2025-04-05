@@ -1,4 +1,0 @@
-
-
-include/levels/lvl_Lights/controls/multiControl_data.txt
-400 300 50 30 0 36
