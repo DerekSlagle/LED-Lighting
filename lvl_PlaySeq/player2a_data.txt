@@ -1,0 +1,7 @@
+16 16  0 0 240
+800 160 4 4 24 24
+
+3
+include/levels/lvl_PlaySeq/pattFiles/player2a_data1.txt
+include/levels/lvl_PlaySeq/pattFiles/player2a_data2.txt
+include/levels/lvl_PlaySeq/pattFiles/player2a_data3.txt

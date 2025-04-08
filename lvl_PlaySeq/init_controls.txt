@@ -1,0 +1,13 @@
+Main_Array
+200 40 160 24
+Overlay_Array
+200 80 160 24
+Fire
+364 80 50 24
+
+Main_File
+800 40 160 24
+Overlay_File
+800 80 160 24
+Fire
+964 80 50 24

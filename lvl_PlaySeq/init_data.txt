@@ -1,0 +1,9 @@
+20 20  20 80
+60 60 60
+
+16 16  0 0 240
+200 160 4 4 24 24
+
+include/levels/lvl_PlaySeq/player2_data.txt
+include/levels/lvl_PlaySeq/player2a_data.txt
+include/levels/lvl_PlaySeq/init_controls.txt
