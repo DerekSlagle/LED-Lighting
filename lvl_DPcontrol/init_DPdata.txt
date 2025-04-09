@@ -1,0 +1,9 @@
+8
+include/levels/lvl_DPcontrol/DPimages/colors16/blueGuy_a16color16x16_data.txt
+include/levels/lvl_DPcontrol/DPimages/colors16/blueGuy_b16color16x16_data.txt
+include/levels/lvl_DPcontrol/DPimages/colors16/chair16color16x16_data.txt
+include/levels/lvl_DPcontrol/DPimages/colors16/fireplace16color16x16_data.txt
+include/levels/lvl_DPcontrol/DPimages/colors4/raven_data.txt
+include/levels/lvl_DPcontrol/DPimages/colors16/DogAni16colorBits8x8_data.txt
+include/levels/lvl_DPcontrol/DPimages/colors2/digits5x3_data.txt
+include/levels/lvl_DPcontrol/DPimages/colors2/DataPlay2colorBits8x8_data.txt
