@@ -39,20 +39,19 @@ class lvl_PlayerSequencing : public Level
     std::vector<patternData> pattVec;// container for all
     std::vector<LP2data> LP2dataVec;
     size_t pattSetIdx = 0;
-    bool initPlayer2( const char* fileName );
-    void nextPatternSet( LightPlayer2& LP2, size_t setIdx );// from LP2dataVec[setIdx]
+    bool initPlayer2( const char* fileName );// and LtPlay2_Over + LP2data_OverVec
     // a 2nd player as overlay
     LightPlayer2 LtPlay2_Over;
     std::vector<patternData> pattVec_Over;
     std::vector<LP2data> LP2data_OverVec;// container for overlay singles
     size_t pattSetIdx_Over = 0;
-    // for the overlay
+    // for LtPlay2 and the overlay
     void newPatternSet( LightPlayer2& LP2, const LP2data& LPdata );// from LPdata
 
     // method 2: Load patternData from a file on demand
     LightPlayer2 LtPlay2_a;
     std::vector<patternData> pattVec_a;// container for the current set, for overlay singles
-    bool initPlayer2_a( const char* fileName );
+    bool initPlayer2_a( const char* fileName );// LightGrid_a, LtPlay2_a, Play2_aFilenames
     std::vector<std::string> Play2_aFilenames;
     // next pattern set read from file
     bool nextPatternSet( LightPlayer2& LP2, const char* fileName );// false if no such file

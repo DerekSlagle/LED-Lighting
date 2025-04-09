@@ -138,6 +138,7 @@ bool lvl_PlayerSequencing::initPlayer2( const char* fileName )
     return true;
 }
 
+/*
 // start LP2 on indexed set in LP2dataVec
 void lvl_PlayerSequencing::nextPatternSet( LightPlayer2& LP2, size_t setIdx )
 {
@@ -155,6 +156,7 @@ void lvl_PlayerSequencing::nextPatternSet( LightPlayer2& LP2, size_t setIdx )
     LP2.offLt = rLPD.offLt;
     LP2.setRectBounds( rLPD.rows, rLPD.cols, rLPD.row0, rLPD.col0 );
 }
+*/
 
 // start LP2 on set in LPdata
 void lvl_PlayerSequencing::newPatternSet( LightPlayer2& LP2, const LP2data& LPdata )
@@ -295,7 +297,8 @@ bool lvl_PlayerSequencing::init_controls( const char* fileName )
     patternSetRB.pFuncIdx = [this](size_t n)
     {
         for( Light& Lt : LightGrid ) Lt = GridClearLt;// clear grid
-        nextPatternSet( LtPlay2, n );//next set
+   //     nextPatternSet( LtPlay2, n );//next set
+        newPatternSet( LtPlay2, LP2dataVec[n] );//next set
     };
     // overlay
     fin >> label;
