@@ -1,17 +1,19 @@
 #ifndef LIGHTPLAYER2_H
 #define LIGHTPLAYER2_H
 
+#include<iostream>
+
 #include "Light.h"
 
 // a player for presenting procedural patterns in a specified order
 struct patternData// for each pattern in the sequence to be played
 {
 public:
-    unsigned int funcIndex = 0;// which pattern
-    unsigned int stepPause = 1;// between each step in the present pattern. To slow animation
-    unsigned int param = 0;// varying purpose. see notes for each case in getPattLength() and getState()
+    uint8_t funcIndex = 0;// which pattern
+    uint8_t stepPause = 1;// between each step in the present pattern. To slow animation
+    uint8_t param = 0;// varying purpose. see notes for each case in getPattLength() and getState()
     // convenient init
-    void init( unsigned int fIdx, unsigned int StepPause = 1, unsigned int Param = 0 )
+    void init( uint8_t fIdx, uint8_t StepPause = 1, uint8_t Param = 0 )
     { funcIndex = fIdx; stepPause = StepPause; param = Param; }
 };
 
@@ -29,16 +31,20 @@ class LightPlayer2
     unsigned int stepIter = 0;// 0 to patternLength
     // new. Lights are members not passed as arguments
     Light onLt, offLt;
+    bool drawOffLt = true;
 
     // new. Find pattern length
-    unsigned int getPattLength()const;// lookup for each funcIndex
+    uint8_t getPattLength()const;// lookup for each funcIndex
 
     // Arduino: Lights[NUM_LEDS]  NUM_LEDS = Rows*Cols     patternData[]            patternData size
     void init( Light& r_Lt0, int Rows, int Cols, const patternData& rPattData, unsigned int NumPatterns );
 
     // 1st player draws the off color
+    void takeStep();
     void update();// assign as desired
-    void updateOnOnly();// writes only to onLt
+    // drawMode = 1: is grid
+    void updateIsGrid();
+    void updateIsGridOnOnly();// writes only to onLt
     // for use as 2nd player in sub rect
     void updateSub();// draw over background
     void updateSubOnOnly();// writes only to onLt. 1st player assign of others stand
@@ -67,24 +73,40 @@ class LightPlayer2
     LightPlayer2(){}
     ~LightPlayer2(){}
 
+    void bindToGrid(  Light& r_Lt0, int GridRows, int GridCols );
     // set the target rectangle within a larger array (Grid)
     void setGridBounds( int Row0, int Col0, int GridRows, int GridCols )
-    { row0 = Row0; col0 = Col0; gridRows = GridRows; gridCols = GridCols; }
+    { row0 = Row0; col0 = Col0; gridRows = GridRows; gridCols = GridCols; setDrawMode(); }
+    // within same grid
+    void setTargetRect( int Rows, int Cols, int Row0, int Col0 )
+    { row0 = Row0; col0 = Col0; rows = Rows; cols = Cols; numLts = rows*cols; setDrawMode(); }
 
     // useful getters
     int getRows()const{ return rows; }
     int getCols()const{ return cols; }
+    int getRow0()const{ return row0; }
+    int getCol0()const{ return col0; }
     unsigned int getNumLts()const{ return numLts; }
+    // setters
+    void setRows( int Rows ){ rows = Rows; setDrawMode(); }
+    void setCols( int Cols ){ cols = Cols; setDrawMode(); }
+    void setRow0( int Row0 ){ row0 = Row0; setDrawMode(); }
+    void setCol0( int Col0 ){ col0 = Col0; setDrawMode(); }
 
-    protected:// new for me. Not everything is public
-    Light* pLt0 = nullptr;// to LightArr on Arduino
+    // other use?
+    void updateAsEq( float* pVal )const;// cols elements is assumed
 
- //   unsigned int rows = 1, cols = 1;
+    protected:
+    Light* pLt0 = nullptr;// to LightArr
+
     int rows = 1, cols = 1;// dimensions of this array
     int row0 = 0, col0 = 0;// origin in grid
     int gridCols = 1, gridRows = 1;// bounding grid
     // dependent. For convenience in functions
     unsigned int numLts = 1;// numLts = rows*cols
+
+    int drawMode = 3;// 1: is grid, 2: is all in grid, 3: is partly in grid
+    void setDrawMode();
 
     private:
 };

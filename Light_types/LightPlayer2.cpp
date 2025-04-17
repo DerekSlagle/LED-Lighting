@@ -18,9 +18,57 @@ void LightPlayer2::init( Light& r_Lt0, int Rows, int Cols, const patternData& rP
     gridRows = rows;
     gridCols = cols;
     row0 = col0 = 0;
+    drawMode = 1;
 }
 
-void LightPlayer2::update()// assign as desired
+void LightPlayer2::bindToGrid( Light& r_Lt0, int GridRows, int GridCols )
+{
+    pLt0 = &r_Lt0;
+    setGridBounds( row0, col0, GridRows, GridCols );
+}
+
+void LightPlayer2::setDrawMode()
+{
+    if( rows == gridRows && cols == gridCols && row0 == 0 && col0 == 0 )
+        drawMode = 1;// is grid
+    else if( ( row0 >= 0 && row0 + rows <= gridRows ) && ( col0 >= 0 && col0 + cols <= gridCols ) )
+        drawMode = 2;// is all in grid
+    else
+        drawMode = 3;// is partly in grid
+}
+
+void LightPlayer2::takeStep()
+{
+    if( ++stepTimer >= pattData[ patternIter ].stepPause )
+    {
+        stepTimer = 0;// to next step
+        if( ++stepIter >= getPattLength() )
+        {
+            stepIter = 0;// to next pattern
+            if( ++patternIter >= numPatterns )
+                patternIter = 0;// reset cycle
+        }
+    }
+}
+
+void LightPlayer2::update()// assign as required
+{
+    if( drawMode == 1 )
+    {
+        if( drawOffLt ) updateIsGrid();
+        else updateIsGridOnOnly();
+    }
+    else if( drawMode == 2 || drawMode == 3 )
+    {
+        if( drawOffLt ) updateSub();
+        else updateSubOnOnly();
+    }
+    else updateSub();// default
+
+    takeStep();
+}
+
+void LightPlayer2::updateIsGrid()// assign as desired
 {
     for( unsigned int n = 0; n < numLts; ++n )
     {
@@ -28,33 +76,15 @@ void LightPlayer2::update()// assign as desired
         else *( pLt0 + n ) = offLt;
     }
 
-    if( ++stepTimer >= pattData[ patternIter ].stepPause )
-    {
-        stepTimer = 0;// to next step
-        if( ++stepIter >= getPattLength() )
-        {
-            stepIter = 0;// to next pattern
-            if( ++patternIter >= numPatterns )
-                patternIter = 0;// reset cycle
-        }
-    }
+    takeStep();
 }
 
-void LightPlayer2::updateOnOnly()// for drawing after another player
+void LightPlayer2::updateIsGridOnOnly()// for drawing after another player
 {
     for( unsigned int n = 0; n < numLts; ++n )
         if( getState(n) ) *( pLt0 + n ) = onLt;
 
-    if( ++stepTimer >= pattData[ patternIter ].stepPause )
-    {
-        stepTimer = 0;// to next step
-        if( ++stepIter >= getPattLength() )
-        {
-            stepIter = 0;// to next pattern
-            if( ++patternIter >= numPatterns )
-                patternIter = 0;// reset cycle
-        }
-    }
+    takeStep();
 }
 
 void LightPlayer2::updateSub()
@@ -77,16 +107,7 @@ void LightPlayer2::updateSub()
         }
     }
 
-    if( ++stepTimer >= pattData[ patternIter ].stepPause )
-    {
-        stepTimer = 0;// to next step
-        if( ++stepIter >= getPattLength() )
-        {
-            stepIter = 0;// to next pattern
-            if( ++patternIter >= numPatterns )
-                patternIter = 0;// reset cycle
-        }
-    }
+    takeStep();
 }
 
 void LightPlayer2::updateSubOnOnly()// writes only to onLt
@@ -107,21 +128,12 @@ void LightPlayer2::updateSubOnOnly()// writes only to onLt
         }
     }
 
-    if( ++stepTimer >= pattData[ patternIter ].stepPause )
-    {
-        stepTimer = 0;// to next step
-        if( ++stepIter >= getPattLength() )
-        {
-            stepIter = 0;// to next pattern
-            if( ++patternIter >= numPatterns )
-                patternIter = 0;// reset cycle
-        }
-    }
+    takeStep();
 }
 
-unsigned int LightPlayer2::getPattLength()const
+uint8_t LightPlayer2::getPattLength()const
 {
-    const unsigned int funcIdx = pattData[ patternIter ].funcIndex;
+    const uint8_t funcIdx = pattData[ patternIter ].funcIndex;
 
     if( funcIdx == 0 ) return 1;// pause pattern
     if( funcIdx >= 1 && funcIdx <= 5 ) return numLts;
@@ -136,8 +148,8 @@ unsigned int LightPlayer2::getPattLength()const
 
 bool LightPlayer2::getState( unsigned int n )const
 {
-    unsigned int funcIdx = pattData[ patternIter ].funcIndex;
-    unsigned int param = pattData[ patternIter ].param;
+    uint8_t funcIdx = pattData[ patternIter ].funcIndex;
+    uint8_t param = pattData[ patternIter ].param;
 
     switch( funcIdx )
     {
@@ -237,4 +249,26 @@ bool LightPlayer2::scrollDiagonal( unsigned int n, unsigned int Mode )const
     if( Mode == 3 ) return c == (int)stepIter + r - rows - 1;// up rt
 
     return false;
+}
+
+// alternate display
+void LightPlayer2::updateAsEq( float* pVal )const// cols elements is assumed
+{
+    int numOn = 0;
+    Light* pBase = pLt0 + gridCols*row0 + col0;
+
+    for( int c = 0; c < cols; ++c )
+    {
+        numOn = pVal[c]*( rows - 1 );
+        if( numOn < 0 ) numOn *= -1;// amplitude only
+        if( numOn >= rows ) numOn = rows - 1;// limit
+
+        Light* pLt = pBase + ( rows - 1 )*gridCols + c;// start at bottom of column
+        for( int n = 0; n < numOn; ++n )
+        {
+            *pLt = onLt;
+            pLt -= gridCols;// up 1 row
+        }
+        // offLt?
+    }
 }

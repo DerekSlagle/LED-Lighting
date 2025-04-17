@@ -4,6 +4,18 @@
 #include "Light.h"
 #include "../utility/bitArray.h"
 
+// full data set for changing which image is drawn
+struct DPdata
+{
+    uint8_t* pStateData = nullptr;
+    unsigned int stateDataSz = 0;
+    Light Lt[16];
+    uint8_t numColors = 2;// 2, 4 or 16
+    bool drawOff = true;// draw both if true or draw only onLt if false
+    bool fadeAlong = false;// fade each frame into the next
+    int rows, cols, row0, col0;
+};
+
 class DataPlayer
 {
     protected:
@@ -14,6 +26,7 @@ class DataPlayer
     // dependent. For convenience in functions
     unsigned int numLts = 1;// numLts = rows*cols
     int drawMode = 3;// 1: is grid, 2: is all in grid, 3: is partly in grid
+    void setDrawMode();
     void updateIsGrid();// 1
     void updateAllIn();// 2
     void updatePartlyIn();// 3
@@ -49,6 +62,8 @@ class DataPlayer
     unsigned int stepIter = 0, numSteps = 1;
 
     void update();
+    void updateZoomOut();
+    void takeStep();
 
     Light getState( unsigned int n )const;
 
@@ -57,11 +72,19 @@ class DataPlayer
 
     int getRows()const{ return rows; }
     int getCols()const{ return cols; }
+    int getRow0()const{ return row0; }
+    int getCol0()const{ return col0; }
     unsigned int getNumLts()const{ return numLts; }
+    // setters
+    void setRows( int Rows ){ rows = Rows; setDrawMode(); }
+    void setCols( int Cols ){ cols = Cols; setDrawMode(); }
+    void setRow0( int Row0 ){ row0 = Row0; setDrawMode(); }
+    void setCol0( int Col0 ){ col0 = Col0; setDrawMode(); }
 
     void init( Light& r_Lt0, int Rows, int Cols, uint8_t& r_StateData, unsigned int DataSz, uint8_t NumColors );
-
+    void bindToGrid(  Light& r_Lt0, int GridRows, int GridCols );
     void setGridBounds( int Row0, int Col0, int GridRows, int GridCols );
+    void setTargetRect( int Rows, int Cols, int Row0, int Col0 );
 
     DataPlayer(){}
     ~DataPlayer(){}

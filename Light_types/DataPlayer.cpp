@@ -37,12 +37,44 @@ void DataPlayer::setGridBounds( int Row0, int Col0, int GridRows, int GridCols )
     gridRows = GridRows;
     gridCols = GridCols;
 
+    setDrawMode();
+}
+
+void DataPlayer::bindToGrid( Light& r_Lt0, int GridRows, int GridCols )
+{
+    pLt0 = &r_Lt0;
+    setGridBounds( row0, col0, GridRows, GridCols );
+}
+
+void DataPlayer::setTargetRect( int Rows, int Cols, int Row0, int Col0 )
+{
+    rows = Rows;
+    cols = Cols;
+    row0 = Row0;
+    col0 = Col0;
+    setDrawMode();
+}
+
+void DataPlayer::setDrawMode()
+{
     if( rows == gridRows && cols == gridCols && row0 == 0 && col0 == 0 )
         drawMode = 1;// is grid
     else if( ( row0 >= 0 && row0 + rows <= gridRows ) && ( col0 >= 0 && col0 + cols <= gridCols ) )
         drawMode = 2;// is all in grid
     else
         drawMode = 3;// is partly in grid
+}
+
+void DataPlayer::takeStep()
+{
+    if( !isPlaying ) return;
+
+    if( ++stepTimer >= stepPause )
+    {
+        stepTimer = 0;// to next step
+        if( ++stepIter >= numSteps )
+            stepIter = 0;// start over
+    }
 }
 
 void DataPlayer::updateIsGrid()// 1
@@ -59,14 +91,7 @@ void DataPlayer::updateIsGrid()// 1
         }
     }
 
-    if( !isPlaying ) return;
-
-    if( ++stepTimer >= stepPause )
-    {
-        stepTimer = 0;// to next step
-        if( ++stepIter >= numSteps )
-            stepIter = 0;// start over
-    }
+    takeStep();
 }
 
 void DataPlayer::updateAllIn()// 2
@@ -88,12 +113,7 @@ void DataPlayer::updateAllIn()// 2
         }
     }
 
-    if( ++stepTimer >= stepPause )
-    {
-        stepTimer = 0;// to next step
-        if( ++stepIter >= numSteps )
-            stepIter = 0;// start over
-    }
+    takeStep();
 }
 
 void DataPlayer::flipX_AllIn()
@@ -114,12 +134,7 @@ void DataPlayer::flipX_AllIn()
         }
     }
 
-    if( ++stepTimer >= stepPause )
-    {
-        stepTimer = 0;
-        if( ++stepIter >= numSteps )
-            stepIter = 0;
-    }
+    takeStep();
 }
 
 void DataPlayer::flipY_AllIn()
@@ -140,12 +155,7 @@ void DataPlayer::flipY_AllIn()
         }
     }
 
-    if( ++stepTimer >= stepPause )
-    {
-        stepTimer = 0;
-        if( ++stepIter >= numSteps )
-            stepIter = 0;
-    }
+    takeStep();
 }
 
 void DataPlayer::updatePartlyIn()// 3
@@ -173,12 +183,7 @@ void DataPlayer::updatePartlyIn()// 3
         }
     }
 
-    if( ++stepTimer >= stepPause )
-    {
-        stepTimer = 0;// to next step
-        if( ++stepIter >= numSteps )
-            stepIter = 0;// start over
-    }
+    takeStep();
 }
 
 void DataPlayer::update()
@@ -233,6 +238,45 @@ Light DataPlayer::updateFade( unsigned int n )const
     float fb = u*LtNext.b + ( 1.0f - u )*LtNow.b;
 
     return Light( fr, fg, fb );
+}
+
+// Zoom by 1/2. even rows and cols only. Averages 4 Lights into 1. No fade effect
+void DataPlayer::updateZoomOut()// 3
+{
+    if( rows%2 || cols%2 ) return;// even rows and cols only.
+
+    Light* pBase = pLt0 + gridCols*row0 + col0;
+    Light cellLt;
+    uint16_t rd = 0, gn = 0, bu = 0;
+
+    for( int r = 0; r < rows; r += 2 )
+    {
+        if( r + row0 < 0 ) continue;
+        if( r + 1 + row0 >= gridRows ) break;
+
+        Light* pRow = pBase + (r/2)*gridCols;
+        for( int c = 0; c < cols; c += 2 )
+        {
+            if( c + col0 < 0 ) continue;
+            if( c + 1 + col0 >= gridCols ) break;
+
+            // sum over 4 Lights
+            rd = 0; gn = 0; bu = 0;
+            for( unsigned int k = 0; k < 4; ++k )
+            {
+                cellLt = getState( ( r + k/2 )*cols + c + k%2 );
+                rd += cellLt.r;
+                gn += cellLt.g;
+                bu += cellLt.b;
+            }
+
+            Light LtNow( rd/4.0f, gn/4.0f, bu/4.0f );
+            if( drawOff ) *( pRow + c/2 ) = LtNow;// draw all colors
+            else if( LtNow != Lt[0] ) *( pRow + c/2 ) = LtNow;// draw all but Lt[0]
+        }
+    }
+
+    takeStep();
 }
 
 Light DataPlayer::getState( unsigned int n )const
