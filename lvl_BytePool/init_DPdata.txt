@@ -1,0 +1,14 @@
+5  
+2 2  2 20  2 40  2 60 2 80
+19 2  2 24  2 40  11 60 12 80
+
+5000
+
+5
+include/levels/lvl_BytePool/DPimages/colors16/blueGuy_a16color16x16_data.txt
+include/levels/lvl_BytePool/DPimages/colors16/bed16color16x16_data.txt
+include/levels/lvl_BytePool/DPimages/colors4/raven_data.txt
+include/levels/lvl_BytePool/DPimages/colors16/DogAni16colorBits8x8_data.txt
+include/levels/lvl_BytePool/DPimages/colors2/digits5x3_data.txt
+
+0 1 2 3 4

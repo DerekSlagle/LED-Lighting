@@ -1,0 +1,8 @@
+5
+include/levels/lvl_BytePool/patternData/set2_A.txt
+include/levels/lvl_BytePool/patternData/set2_B.txt
+include/levels/lvl_BytePool/patternData/set2_C.txt
+include/levels/lvl_BytePool/patternData/set2_D.txt
+include/levels/lvl_BytePool/patternData/set2_E.txt
+
+0 1 2 3 4

@@ -1,0 +1,25 @@
+
+
+** report **  pByte = 16113776
+
+15 holding 2090 of 5000 Bytes
+ Held Blocks
+ n: 0	128 Bytes from 18
+ n: 11	18 Bytes from 146
+ n: 1	1024 Bytes from 164
+ n: 12	12 Bytes from 1203
+ n: 2	576 Bytes from 1215
+ n: 13	24 Bytes from 1791
+ n: 3	160 Bytes from 1815
+ n: 14	6 Bytes from 1975
+ n: 4	19 Bytes from 1981
+ n: 5	6 Bytes from 2000
+ n: 6	12 Bytes from 2006
+ n: 7	18 Bytes from 2018
+ n: 8	24 Bytes from 2036
+ n: 9	30 Bytes from 2060
+ n: 10	33 Bytes from 2090
+ Free Blocks
+18 Bytes from 0
+15 Bytes from 1188
+2877 Bytes from 2123

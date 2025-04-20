@@ -102,15 +102,19 @@ bool lvl_Lights::initPlayer2( const char* fileName )
     pattDataVec.reserve( numPatterns );
 
     patternData PD;
+    unsigned int fI, sP, par;
     for( unsigned int k = 0; k < numPatterns; ++k )
     {
-        fin >> PD.funcIndex >> PD.stepPause >> PD.param;
+    //    fin >> PD.funcIndex >> PD.stepPause >> PD.param;
+        fin >> fI >> sP >> par;
+        PD.init( fI, sP, par );
         pattDataVec.push_back( PD );
     }
 
     LtPlay2.init( LightArr2[0], Rows, Cols, pattDataVec[0], numPatterns );
     LtPlay2.onLt = onLight;
     LtPlay2.offLt = offLight;
+    LtPlay2.drawOffLt = false;
 
     // present initial state
     LtPlay2.update();
@@ -193,6 +197,7 @@ bool lvl_Lights::initDataPlay( const char* fileName )
     fin >> LtSz.x >> LtSz.y;
     DataPlayLV.init( DataLightArr[0], Rows, Cols, posX, posY, dPosX, dPosY, LtSz );
 
+    DataPlay.pLight = DataPlay_Color;
     if( !initDataPlayer( DataPlay, DataLightArr[0], Rows, Cols, DataVec, fin ) )
     {
         std::cerr << "\ninitDataPlayer() fail";
@@ -204,92 +209,6 @@ bool lvl_Lights::initDataPlay( const char* fileName )
 
     return true;
 }
-
-    /*
-    int Rows, Cols, Row0, Col0;
-    fin >> Rows >> Cols >>  Row0 >> Col0;
-    fin >> DataPlay.stepPause;
-    fin >> DataPlay.drawOff;
-    fin >> DataPlay.fadeAlong;
-    bool Is4color;
-    fin >> Is4color;
-
-    unsigned int rd, gn, bu;
-    fin >> rd >> gn >> bu;
-    DataPlay.Lt[0].init(rd,gn,bu);
-    fin >> rd >> gn >> bu;
-    DataPlay.Lt[1].init(rd,gn,bu);
-    if( Is4color )// get 2 remaining colors
-    {
-        fin >> rd >> gn >> bu;
-        DataPlay.Lt[2].init(rd,gn,bu);
-        fin >> rd >> gn >> bu;
-        DataPlay.Lt[3].init(rd,gn,bu);
-    }
-
-    // the data
-    bool dataInBits;
-    fin >> dataInBits;
-
-    if( dataInBits )
-    {
-        if( Is4color )
-        {
-            std::cout << "\n initDataPlay(): 4 colors from dblBits";
-            unsigned int numDblBits;
-            fin >> numDblBits;
-            if( numDblBits%4 == 0 ) DataVec.resize( numDblBits/4 );
-            else DataVec.resize( numDblBits/4 + 1 );
-            DataPlay.init( LightArr4[0], Rows, Cols, DataVec[0], DataVec.size(), true );
-
-            unsigned int inVal = 0;
-            DataPlay.BA.Clear();
-            for( unsigned int k = 0; k < numDblBits; ++k )
-            {
-                fin >> inVal;
-                DataPlay.BA.push( inVal/2 > 0 );// hi bit
-                DataPlay.BA.push( inVal%2 > 0 );// lo bit
-            }
-        }
-        else// is 2 color
-        {
-            std::cout << "\n initDataPlay(): 2 colors from bits";
-            unsigned int numBits;
-            fin >> numBits;
-            if( numBits%8 == 0 ) DataVec.resize( numBits/8 );
-            else DataVec.resize( numBits/8 + 1 );
-            DataPlay.init( LightArr4[0], Rows, Cols, DataVec[0], DataVec.size(), false );
-
-            bool inVal = 0;
-            DataPlay.BA.Clear();
-            for( unsigned int k = 0; k < numBits; ++k )
-            {
-                fin >> inVal;
-                DataPlay.BA.push( inVal );
-            }
-        }
-    }
-    else// data is in whole bytes which may represent 2 or 4 colors
-    {
-        std::cout << "\n initDataPlay(): " << 2 + 2*Is4color << " colors from Bytes";
-        unsigned int numBytes;
-        fin >> numBytes;
-        DataVec.reserve( numBytes );
-        unsigned int inVal = 0;
-        for( unsigned int k = 0; k < numBytes; ++k )
-        {
-            fin >> inVal;
-            DataVec.push_back( inVal );
-        }
-
-        DataPlay.init( LightArr4[0], Rows, Cols, DataVec[0], DataVec.size(), Is4color );
-    }
-
- //   DataPlay.init( LightArr4[0], Rows, Cols, DataVec[0], DataVec.size(), Is4color );
-    DataPlay.setGridBounds( Row0, Col0, LtPlay4.getRows(), LtPlay4.getCols() );
-
-    return true;
-    */
 
 bool lvl_Lights::init_wvPlay( const char* fileName )
 {
@@ -515,7 +434,7 @@ bool lvl_Lights::handleEvent( sf::Event& rEvent )
 void lvl_Lights::update( float dt )
 {
     wvPlay.update(dt);
-    LtPlay2.updateOnOnly();
+    if( pLtPlay2_Butt.sel ) LtPlay2.update();
     wvPlayLV.update();
 
     LtPlay4.update();
@@ -664,6 +583,13 @@ bool lvl_Lights::init_controls( const char* fileName )
     std::cout << "\n initMC done";
     finControl.close();
     button::RegisteredButtVec.push_back( &multiCS );
+
+    // toggle LtPlay2 on / off
+    float x, y, W,  H;
+    fin >> x >> y >> W >> H;
+    pLtPlay2_Butt.init( x, y, W, H, [this](){ if( pLtPlay2_Butt.sel ) LtPlay2.Reset(); }, "Play" );
+    pLtPlay2_Butt.setSel( true );
+    button::RegisteredButtVec.push_back( &pLtPlay2_Butt );
 
     return true;
 }

@@ -1,0 +1,12 @@
+20 20  20 80
+60 60 100
+
+24 100  0 0 200
+240 60 2 2 8 8
+
+20 160
+
+include/levels/lvl_BytePool/init_DPdata.txt
+include/levels/lvl_BytePool/init_PPdata.txt
+
+include/levels/lvl_BytePool/init_controls.txt
