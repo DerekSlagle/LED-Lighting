@@ -1,0 +1,18 @@
+// declare the following
+std::vector<Light> LightVec;// for the 16x16 Light array
+int GridRows = 16, GridCols = 16;
+std::vector<uint8_t> DataVec;// storage for image data
+DataPlayer DataPlay;
+
+// within an init function
+LightVec.resize( GridRows*GridCols );
+std::ifstream fin( "lvl_DPcontrol/DPimages/colors16/blueGuy_a16color16x16_data.txt" );
+if( !fin ) return;
+// call the function in Light_types/PlayerFuncs.h. It will size DataVec
+initDataPlayer( DataPlay, LightVec[0], GridRows, GridCols, DataVec, fin );// handle false return
+
+// within the update function
+DataPlay.update();
+// update the LightVisual too
+
+That should do it!
