@@ -75,8 +75,8 @@ void testMemPool()
     }
 
     // copy construct from MPV_A
-    MemPoolVector<int> MPV_B( MPV_A );// will get poolIdx = 3
-    if( !MPV_B.pPool )
+    MemPoolVector<int> MPV_B( MPV_A );// will get poolIdx = 3, tempIdx = 5
+    if( !MPV_B.pPool )//                because poolIdx = 4 is taken
     {
         std::cout << "\n MPV_B copy construction fail";
         return;
