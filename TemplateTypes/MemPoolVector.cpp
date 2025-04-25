@@ -2,6 +2,7 @@
 
 // binds by finding pBase == pPool->ppBlock[ poolIdx ]
 // will take a spot if any ppBlock == nullptr ( not ib use )
+/*
 template<class T>
 bool MemPoolVector<T>::init( MemoryPool<T>* p_Pool )
 {
@@ -57,6 +58,76 @@ bool MemPoolVector<T>::init( MemoryPool<T>* p_Pool )
     }
     // out of luck
     return false;
+}
+*/
+
+template<class T>
+bool MemPoolVector<T>::Bind( MemoryPool<T>* p_Pool, unsigned int Size )
+{
+    if( !p_Pool ) return false;
+    pPool = nullptr;// new
+    poolIdx = tempIdx = 0;// new
+    bool found = false;
+
+    // find my places
+    for( unsigned int k = 0; k < p_Pool->numUsers; ++k )
+    {
+        if( !( p_Pool->ppBlock[k] || p_Pool->pBlockSz[k] ) ) continue;// not in use
+        // found the 1st pair
+        if( !found )
+        {
+            if( ( p_Pool->ppBlock[k] == &pBase ) && ( p_Pool->pBlockSz[k] == &Capacity ) )
+            {
+                poolIdx = k;
+                found = true;
+            }
+
+        }
+        else if( ( p_Pool->ppBlock[k] == &pBaseTemp ) && ( p_Pool->pBlockSz[k] == &tempCap ) )
+        {
+            pPool = p_Pool;
+            tempIdx = k;
+            if( Size > 0 ) return p_Pool->Alloc( poolIdx, Size );
+            return true;
+        }
+    }
+
+    // take an open spot if none were assigned
+    found = false;
+    for( unsigned int k = 0; k < p_Pool->numUsers; ++k )
+    {
+        if( p_Pool->ppBlock[k] || p_Pool->pBlockSz[k] ) continue;
+        // use this one
+        if( !found )
+        {
+            poolIdx = k;
+            found = true;
+        }
+        else
+        {
+            pPool = p_Pool;
+            p_Pool->ppBlock[ poolIdx ] = &pBase;
+            p_Pool->pBlockSz[ poolIdx ] = &Capacity;
+            tempIdx = k;
+            p_Pool->ppBlock[k] = &pBaseTemp;
+            p_Pool->pBlockSz[k] = &tempCap;
+            if( Size > 0 ) return p_Pool->Alloc( poolIdx, Size );
+            return true;
+        }
+    }
+    // out of luck
+    return false;
+}
+
+template<class T>
+void MemPoolVector<T>::unBind()
+{
+    if( !pPool ) return;
+    pPool->ppBlock[ poolIdx ] = nullptr;
+    pPool->pBlockSz[ tempIdx ] = nullptr;
+    pPool->ppBlock[ poolIdx ] = nullptr;
+    pPool->pBlockSz[ tempIdx ] = nullptr;
+    pPool = nullptr;
 }
 
 template<class T>
@@ -176,10 +247,12 @@ MemPoolVector<T>& MemPoolVector<T>::operator = ( const MemPoolVector& V )// assi
     }
 
     // pBase should = nullptr after call to Free()
-    if( pPool->Alloc( poolIdx, V.Size ) )// may not succeed
+    if( pPool->Alloc( poolIdx, V.Capacity ) )// may not succeed
     {
         CapBump = V.CapBump;
         Size = V.Size;
+        for( unsigned int n = 0; n < V.Size; ++n )
+            *( pBase + n ) = *( V.pBase + n );
     }
 
     return *this;
@@ -189,7 +262,8 @@ template<class T>
 MemPoolVector<T>::MemPoolVector( const MemPoolVector& V )// copy
 {
     if( !V.pPool ) return;
-     init( V.pPool );
+  //   init( V.pPool );
+     Bind( V.pPool );
     *this = V;
 }
 

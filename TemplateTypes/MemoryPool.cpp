@@ -1,35 +1,62 @@
 #include "MemoryPool.h"
 
+/*
 template<class T>
 void MemoryPool<T>::init( T* p_Base, unsigned int numBytes )
 {
     pBase = p_Base;
     poolSz = numBytes;
 }
+*/
 
-// verifies all pointers are != nullptr
-template<class T>
-bool MemoryPool<T>::bindUsers( T*** pp_Block, unsigned int** p_BlockSz, unsigned int NumUsers )
+ // use with external pointer arrays
+ template<class T>
+void MemoryPool<T>::init( T* p_Base, unsigned int ArrSz, T*** pp_Block, unsigned int** p_BlockSz, unsigned int NumUsers )
 {
-    if( !pp_Block ) return false;
+    if( !pp_Block ) return;
     ppBlock = pp_Block;
 
-    if( !p_BlockSz ) return false;
+    if( !p_BlockSz ) return;
     pBlockSz = p_BlockSz;
     numUsers = NumUsers;
 
-    // init with no storage
+    if( !p_Base ) return;
+    pBase = p_Base;
+    poolSz = ArrSz;
+
+    // init all to nullptr
     for( unsigned int n = 0; n < numUsers; ++n )
     {
-        if( ppBlock[n] ) *ppBlock[n] = nullptr;// assign users pData = nullptr;
-     //   else return false;
-
-        if( pBlockSz[n] ) *pBlockSz[n] = 0;// assign users Capacity = 0;
-    //    else return false;
+        ppBlock[n] = nullptr;
+        pBlockSz[n] = nullptr;
     }
 
  //   std::cerr << "\n bindUsers() check";
-    return true;
+    return;
+}
+
+template<class T>
+void MemoryPool<T>::initBaked( T* p_Base, unsigned int ArrSz, unsigned int NumUsers )
+{
+    unsigned int ptrSz = sizeof( int* );// all are same size
+    unsigned int Tsz = sizeof( T );//
+    unsigned int hfBlockSz = (ptrSz*NumUsers)/Tsz;// # of elements to store NumUsers pointers
+    if( ( ptrSz*NumUsers )%Tsz > 0 ) ++hfBlockSz;// for the remainder
+
+    unsigned int ptrBlockSz = 2*hfBlockSz;
+ //   init( p_Base + ptrBlockSz, ArrSz - ptrBlockSz );// Capacity for T storage = ArrSz -  ptrBlockSz
+    pBase = p_Base + ptrBlockSz;
+    poolSz = ArrSz - ptrBlockSz;
+    numUsers = NumUsers;
+
+    // bake the 1st array in
+    ppBlock = new ( p_Base ) T**[ NumUsers ];// pointer to user pBase
+    if( ppBlock )
+        for( unsigned int n = 0; n < NumUsers; ++n ) ppBlock[n] = nullptr;
+    // bake the 2nd array in
+    pBlockSz = new ( p_Base + hfBlockSz ) unsigned int*[ NumUsers ];// pointer to user Capacity
+    if( pBlockSz )
+        for( unsigned int n = 0; n < NumUsers; ++n ) pBlockSz[n] = nullptr;
 }
 
 template<class T>
@@ -127,7 +154,7 @@ bool MemoryPool<T>::Alloc( unsigned int idx, unsigned int ArrSz )const
         if( *ppBlock[ nextIdx ] > pBase )// there's a free block in front
         {
             int gapSz = *ppBlock[ nextIdx ] - pBase;
-            if( gapSz >= (int)ArrSz )// there is
+            if( gapSz >= (int)ArrSz )// there is room
             {
                 *ppBlock[ idx ] = pBase;
                 *pBlockSz[ idx ] = ArrSz;
@@ -139,8 +166,7 @@ bool MemoryPool<T>::Alloc( unsigned int idx, unsigned int ArrSz )const
     //    while( true )
         while( *ppBlock[ nextIdx ] )
         {
-            // 1 past end of given low block
-        //    uint8_t* pBlock = lowBlock + low_pArr->arrSz;
+            // 1 past end of current low block
             T* pBlockLow = *ppBlock[ nextIdx ] + *pBlockSz[ nextIdx ];
             isAnotherBlock = getNextBlockIdx( *ppBlock[ nextIdx ], nextIdx );// 1st ele in next lowest block
 
@@ -154,8 +180,6 @@ bool MemoryPool<T>::Alloc( unsigned int idx, unsigned int ArrSz )const
                     std::cerr << "\n Alloc() " << (unsigned int)nextIdx << " check";
                     return true;
                 }
-
-             //   low_pArr = next_pArr;// update for next iteration
             }
             else if( pBlockLow - pBase + ArrSz <= poolSz )// is remainder of pool enough?
             {
@@ -232,7 +256,7 @@ unsigned int MemoryPool<T>::DeFrag()const// returns number of blocks shifted bac
 }
 
 template<class T>// bound only
-bool MemoryPool<T>::getPoolIndex( const T* p_Base, unsigned int& idx )const
+bool MemoryPool<T>::getMyPoolIndex( const T*& p_Base, unsigned int& idx )const
 {
     if( !p_Base ) return false;
     for( unsigned int n = 0; n < numUsers; ++n )
@@ -338,6 +362,19 @@ bool PoolArray<T>::Bind( MemoryPool<T>* p_Pool, unsigned int Size )
 {
     if( !p_Pool ) return false;
 
+    // check if already bound
+    for( unsigned int n = 0; n < p_Pool->numUsers; ++n )
+    {
+        if( p_Pool->ppBlock[n] == &pBase )
+        {
+            poolIdx = n;
+            pPool = p_Pool;
+            p_Pool->pBlockSz[ poolIdx ] = &Capacity;
+            if( Capacity >= Size ) Capacity = Size;// reduced
+            return true;
+        }
+    }
+
     if( !p_Pool->getFreeIndex( poolIdx ) ) return false;
     // register
     p_Pool->ppBlock[ poolIdx ] = &pBase;
@@ -357,3 +394,38 @@ void PoolArray<T>::unBind()
     pPool->pBlockSz[ poolIdx ] = nullptr;
     pPool = nullptr;
 }
+
+template<class T>
+PoolArray<T>& PoolArray<T>::operator = ( const PoolArray& V )// assign
+{
+    // check for self assign!
+    if( this == &V ) return *this;// in existing state
+    if( !V.pPool || ( pPool != V.pPool ) ) return *this;// same pool only
+
+    // does not allocate higher. copy all or to Capacity
+    for( unsigned int n = 0; n < V.Capacity && n < Capacity; ++n )
+        *( pBase + n ) = *( V.pBase + n );
+
+    return *this;
+}
+
+template<class T>
+PoolArray<T>::PoolArray( const PoolArray& V )// copy
+{
+    if( !V.pPool ) return;
+    pPool = V.pPool;
+    if( pPool->getFreeIndex( poolIdx ) )
+    {
+        // register
+        pPool->ppBlock[ poolIdx ] = &pBase;
+        pPool->pBlockSz[ poolIdx ] = &Capacity;
+        if( V.Capacity > 0 )
+        {
+            pPool->Alloc( poolIdx, V.Capacity );
+            if( pBase ) *this = V;// Alloc was good. Proceed
+        }
+    }
+
+    return;// default constructed state
+}
+

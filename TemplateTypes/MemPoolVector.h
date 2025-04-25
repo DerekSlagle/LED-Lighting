@@ -34,7 +34,7 @@ class MemPoolVector
     T& front(){ return *pBase; }
     T& back(){ return *( pBase + Size - 1 ); }
     T& operator[]( unsigned int n ) { return *( pBase + n ); }// regardless of Size or Capacity
-
+    T& getElement( unsigned int n )const { return *( pBase + n ); }
 
     MemPoolVector& operator = ( const MemPoolVector& V );// assign
     MemPoolVector( const MemPoolVector& V );// copy
@@ -44,9 +44,24 @@ class MemPoolVector
 
     // binds by finding pBase == pPool->ppBlock[ poolIdx ] and for tempIdx, pBaseTemp
     // will take a spot if any ppBlock == nullptr ( not ib use )
-    bool init( MemoryPool<T>* p_Pool );
-    MemPoolVector( MemoryPool<T>* p_Pool ){ init( p_Pool ); }
-    ~MemPoolVector(){ if( pPool && pBase ) pPool->Free( poolIdx ); }
+ //   bool init( MemoryPool<T>* p_Pool );
+
+    bool Bind( MemoryPool<T>* p_Pool, unsigned int Size = 0 );
+    void unBind();
+
+ //   MemPoolVector( MemoryPool<T>* p_Pool ){ init( p_Pool ); }
+    MemPoolVector( MemoryPool<T>* p_Pool, unsigned int Size = 0 ){ Bind( p_Pool, Size ); }
+    ~MemPoolVector()
+    { // release the pool pointers for other use
+        if( pPool && pBase )
+        {
+        //  storage is also freed. The blocks are gone
+            pPool->ppBlock[ poolIdx ] = nullptr;
+            pPool->pBlockSz[ poolIdx ] = nullptr;
+            pPool->ppBlock[ tempIdx ] = nullptr;
+            pPool->pBlockSz[ tempIdx ] = nullptr;
+        }
+    }
 
     protected:
 
