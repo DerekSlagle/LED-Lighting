@@ -1,8 +1,6 @@
 #ifndef MEMORYPOOL_H
 #define MEMORYPOOL_H
 
-#include <iostream>// for Report()
-
 template<class T>
 class MemoryPool
 {
@@ -40,7 +38,8 @@ class MemoryPool
         return Alloc( idx, ArrSz );
     }
 
-    void Report( std::ostream& os, const char* typeName )const;
+    // display the pool state
+    void Report()const;
 
     // external arrays
     MemoryPool( T* p_Base, unsigned int ArrSz, T*** pp_Block, unsigned int** p_BlockSz, unsigned int NumUsers )

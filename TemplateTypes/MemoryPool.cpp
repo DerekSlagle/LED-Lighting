@@ -31,7 +31,6 @@ void MemoryPool<T>::init( T* p_Base, unsigned int ArrSz, T*** pp_Block, unsigned
         pBlockSz[n] = nullptr;
     }
 
- //   std::cerr << "\n bindUsers() check";
     return;
 }
 
@@ -103,7 +102,6 @@ bool MemoryPool<T>::getNextBlockIdx( T* lowBlock, unsigned int& nextIdx )const
         }
     }
 
- //   std::cerr << "\n getNextBlockIdx() check";
     return nextBlock != nullptr;
 }
 
@@ -115,8 +113,7 @@ bool MemoryPool<T>::Alloc( unsigned int idx, unsigned int ArrSz )const
     if( !( ppBlock[ idx ] && pBlockSz[ idx ] ) ) return false;// pointers not assigned. Open for use?
 
     if( idx >= numUsers )
-    {
-        std::cerr << "\n LightPool::Alloc() idx >= numUsers: idx = " << idx << " numUsers = " << numUsers;
+    {        
         return false;
     }
 
@@ -142,10 +139,9 @@ bool MemoryPool<T>::Alloc( unsigned int idx, unsigned int ArrSz )const
         {
             *ppBlock[ idx ] = pBase;
             *pBlockSz[ idx ] = ArrSz;
-            std::cerr << "\n Alloc() 1st check";
             return true;
         }
-        std::cerr << "\n Alloc() ArrSz > poolSz" << " ArrSz = " << ArrSz << " poolSz = " << poolSz;
+
         return false;
     }
     else// look deeper
@@ -158,7 +154,6 @@ bool MemoryPool<T>::Alloc( unsigned int idx, unsigned int ArrSz )const
             {
                 *ppBlock[ idx ] = pBase;
                 *pBlockSz[ idx ] = ArrSz;
-                std::cerr << "\n Alloc() new front block check";
                 return true;
             }
         }
@@ -177,7 +172,6 @@ bool MemoryPool<T>::Alloc( unsigned int idx, unsigned int ArrSz )const
                 {
                     *ppBlock[ idx ] = pBlockLow;
                     *pBlockSz[ idx ] = ArrSz;
-                    std::cerr << "\n Alloc() " << (unsigned int)nextIdx << " check";
                     return true;
                 }
             }
@@ -185,18 +179,15 @@ bool MemoryPool<T>::Alloc( unsigned int idx, unsigned int ArrSz )const
             {
                 *ppBlock[ idx ] = pBlockLow;
                 *pBlockSz[ idx ] = ArrSz;
-                std::cerr << "\n Alloc() end " << (unsigned int)nextIdx << " check";
                 return true;
             }
             else// not enough
             {
-                std::cerr << "\n Alloc() not enough";
                 return false;
             }
         }// end while
     }
 
-     std::cerr << "\n Alloc() false return at end of function";
     return false;
 }
 
@@ -287,73 +278,9 @@ bool MemoryPool<T>::getFreeIndex( unsigned int& idx )const
 }
 
 template<class T>
-void MemoryPool<T>::Report( std::ostream& os, const char* typeName )const
+void MemoryPool<T>::Report()const
 {
-    os << "\n\n** report **  pBase = " << (int)pBase;// << '\n';
-
-    int numHolding = 0;
-    unsigned int szHeld = 0;
-    for( unsigned int n = 0; n < numUsers; ++n )
-    {
-        if( !( ppBlock[n] && pBlockSz[n] ) ) continue;
-
-        if( *ppBlock[n] )
-        {
-            ++numHolding;
-            szHeld += *pBlockSz[n];
-    //        os << " n: " << (unsigned int)n;
-        }
-    }
-
-    os << '\n' << numHolding << " holding " << szHeld << " of " << poolSz << ' ' << typeName;
-    if( numHolding == 0 ) return;
-
-    unsigned int nextIdx = 0;
-    bool isAnotherBlock = getNextBlockIdx( nullptr, nextIdx );
-    if( isAnotherBlock )
-    {
-        os << "\n Held Blocks";
-    }
-
-    while( isAnotherBlock )
-    {
-        os << "\n n: " << (unsigned int)nextIdx << '\t';
-        os << *pBlockSz[ nextIdx ] << ' ' << typeName << " from " << (int)( *ppBlock[ nextIdx ] - pBase );
-        isAnotherBlock = getNextBlockIdx( *ppBlock[ nextIdx ], nextIdx );
-     //   if( --DPholding == 0 ) return;
-    }
-
-    if( szHeld == 0 )
-    {
-        os << "\n Entire pool is free";
-    }
-    else if( szHeld < poolSz )// there is at least 1 free block
-    {
-        os << "\n Free Blocks";
-        isAnotherBlock = getNextBlockIdx( nullptr, nextIdx );
-        if( isAnotherBlock && *ppBlock[ nextIdx ] > pBase )// gap in front
-        {
-            os << '\n' << (int)( *ppBlock[ nextIdx ] - pBase ) << ' ' << typeName << " from 0";
-        }
-
-        while( isAnotherBlock )
-        {
-
-            const T* pBlockLow = *ppBlock[ nextIdx ] + *pBlockSz[ nextIdx ];
-            int gapSz = poolSz - (int)( pBlockLow - pBase );
-
-            isAnotherBlock = getNextBlockIdx( *ppBlock[ nextIdx ], nextIdx );
-            if( isAnotherBlock )
-            {
-                gapSz = (int)( *ppBlock[ nextIdx ] - pBlockLow );
-            }
-
-            if( gapSz > 0 )// free block between
-                os << '\n' << gapSz << ' ' << typeName << " from " << (int)( pBlockLow - pBase );
-        }
-    }
-
-    os << '\n';
+ // Serial.println( "pool report" );
 }
 
 // PoolArray
