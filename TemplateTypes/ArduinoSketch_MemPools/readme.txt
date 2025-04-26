@@ -41,6 +41,8 @@ To use: Enter 1 or 2 integer values
 Enter 1 value if defragmenting the pool.
 Enter -1 to defragment the pool. A report will follow.
 It's not time yet. There are no free blocks yet.
+Enter 2 numbers to change the Capacity of an array.
+Enter: index to PA + new Capacity + enter.
 Let's allocate 7 elements to PA[2].
 It will need more storage. 
 A block of 7 from 42 where the free store begins shall be allocated.
