@@ -27,10 +27,7 @@ void testCharMemPool()
     // verify bounds
     std::cout << "\n charArr begin                 = " << (int)charArr;// char* aarg!
     std::cout << "\n charArr end                   = " << (int)( charArr + charPoolSz );
-    // these 2 should be equal.
-    //  end of pointer storage
     std::cout << "\n charPool.pBlockSz[ maxUsers ] = " << (int)&( charPool.pBlockSz[ maxUsers ] );
-    // beginning of char storage
     std::cout << "\n charPool.pBase                = " << (int)charPool.pBase;
 
     // an array
