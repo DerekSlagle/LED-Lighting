@@ -102,6 +102,10 @@ n: 2   7 int from 22
 Free Blocks
 71 int from 29
 
+Each PoolArray has its pointer to 1st element updated.
+The pool has an array of T** ppBlock[ I ] = &( PA[I].pBase );
+so it can write a new address to pBase.
+
 One more for the demo here. Let's get PA[0] back in the game.
 Allocate 23 elements to PA[0]
 Enter: 0 23 + enter
