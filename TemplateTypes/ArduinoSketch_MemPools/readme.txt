@@ -52,7 +52,7 @@ Enter: 2 7 + enter. Output in the monitor is:
 I = 2
 num2follow = 7
 Alloc good
-7 Elements: 2 4 6 8 10 12 14
+7 Elements: 3 6 9 12 15 18 21
 Pool report pBase = 708
 4 holding 44 of 100 int
 Held Blocks
