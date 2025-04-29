@@ -26,7 +26,7 @@ number of index values to follow.
 Blocks of index values in groups of rows*cols.
 
 Example: A 16x16 image of a bed. Data is from file:
-lvl_DPcontrol/DPimages/bed16color16x16_data.txt
+lvl_DPcontrol/DPimages/colors16/bed16color16x16_data.txt
 Shown here:
 
 16 16
