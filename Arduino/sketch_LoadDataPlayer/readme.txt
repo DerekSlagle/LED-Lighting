@@ -1,5 +1,5 @@
 This sketch allows a DataPlayer to be initialized and loaded with image data.
-Use the files in DPcontrol/DPimages in this distro.
+Use the files in lvl_DPcontrol/DPimages in this distro.
 Copy and paste data using the Serial monitor.
 It's a bit sensitive. Sometimes it goes wrong. Please improve if you see how.
 I may be processing the Serial data wrong/poorly so that it will only work just so.
@@ -26,7 +26,7 @@ number of index values to follow.
 Blocks of index values in groups of rows*cols.
 
 Example: A 16x16 image of a bed. Data is from file:
-DPcontrol/DPimages/bed16color16x16_data.txt
+lvl_DPcontrol/DPimages/bed16color16x16_data.txt
 Shown here:
 
 16 16
