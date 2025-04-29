@@ -168,5 +168,6 @@ numBytes = 128
  chkSum = 6714
 
 These values agree with the images in use in the main PC project.
-For animations with multiple blocks of data enter each block of rows*cols values separately. The data in some files can be pasted 4 blocks at a time
+For animations with multiple blocks of data enter each block of rows*cols values separately.
+The data in some files can be pasted 4 blocks at a time
 ( blue guy ) but in other cases it will parse wrong.
