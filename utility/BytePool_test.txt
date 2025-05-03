@@ -1,0 +1,54 @@
+void testBytePool2()
+{
+    // storage for the pool
+    const unsigned int numBytes = 1000;
+    uint8_t ByteStore[ numBytes ];
+
+    // pointers for the pool
+    const unsigned int numUsers = 6;
+    uint8_t** ppBlock[ numUsers ];// = &pByte
+    unsigned int* pBlockSz[ numUsers ];// = &Capacity
+    // Bob gets the management job!
+    BytePool Bob( ByteStore, numBytes, ppBlock, pBlockSz, numUsers );
+
+    // for above pointers to point to. Pool users
+    uint8_t* pByte[ numUsers ];
+    unsigned int Cap[ numUsers ];
+
+ //   Bob.Report2( std::cout );
+
+    if( !Bob.Alloc_ordered( pByte[0], Cap[0], 120 ) )
+    { std::cout << "\nAlloc fail"; return; }
+
+    if( !Bob.Alloc_ordered( pByte[1], Cap[1], 80 ) )
+    { std::cout << "\nAlloc fail"; return; }
+
+    if( !Bob.Alloc_ordered( pByte[2], Cap[2], 200 ) )
+    { std::cout << "\nAlloc fail"; return; }
+
+    Bob.Report2( std::cout );// good so far
+    std::cout << "\n** Free pByte[1] **";
+    Bob.Free2( pByte[1], Cap[1] );// free block between 0 and 2
+    std::cout << "\npByte[1] = " << (int)pByte[1];// verify = nullptr
+    Bob.Report2( std::cout );// good!
+
+    // take 60 from the block of 80 just freed?
+    std::cout << "\n** Alloc 60 to pByte[3] **";
+    if( !Bob.Alloc_ordered( pByte[3], Cap[3], 60 ) )
+    { std::cout << "\nAlloc fail"; return; }
+    Bob.Report2( std::cout );// perfect!
+
+    if( !Bob.Alloc_ordered( pByte[1], Cap[1], 180 ) )
+    { std::cout << "\nAlloc fail"; return; }
+    Bob.Report2( std::cout );// good
+
+    std::cout << "\n** Free pByte[0] **";
+    Bob.Free2( pByte[0], Cap[0] );// free block between 0 and 2
+    std::cout << "\npByte[0] = " << (int)pByte[0];// verify = nullptr
+    Bob.Report2( std::cout );// good!
+
+    std::cout << "\n** Defrag **";
+    unsigned int numShifted = Bob.DeFrag2();
+    std::cout << "\nnumShifted = " << numShifted;
+    Bob.Report2( std::cout );// ??
+}
