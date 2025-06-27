@@ -29,6 +29,13 @@ class LightPlayer2
 
     unsigned int stepTimer = 0;// timer for stepIter incrementation
     unsigned int stepIter = 0;// 0 to patternLength
+    void Reset(){ patternIter = stepTimer = stepIter = 0; }// start pattern set over
+
+    bool doRepeatSeq = true;
+    bool playSinglePattern = false;
+    void setToPlaySinglePattern( bool playSingle );
+    void firePattern( unsigned int pattIdx );
+
     // new. Lights are members not passed as arguments
     Light onLt, offLt;
     bool drawOffLt = true;
@@ -52,23 +59,26 @@ class LightPlayer2
     bool getState( unsigned int n )const;// of each light (on/off) in the draw of all numLts
 
     // pattern functions indexed to in switch within getState
-    bool scrollToRight( unsigned int n, unsigned int numInGroup )const;// returns state assignment
-    bool scrollToLeft( unsigned int n, unsigned int numInGroup )const;// returns state assignment
-    bool fillFromRight( unsigned int n )const;
-    bool fillFromLeft( unsigned int n )const;
-    bool crissCross( unsigned int n, unsigned int numInGroup )const;
-    bool alternateBlink( unsigned int n )const;
-    bool checkerBlink( unsigned int n )const;// checker board fill
+    // case: 0 returns false always. Use as pausing pattern
+    bool scrollToRight( unsigned int n, unsigned int numInGroup )const;// case: 1 returns state assignment
+    bool scrollToLeft( unsigned int n, unsigned int numInGroup )const;// 2 returns state assignment
+    bool fillFromRight( unsigned int n )const;// 3
+    bool fillFromLeft( unsigned int n )const;// 4
+    bool crissCross( unsigned int n, unsigned int numInGroup )const;// 5
+    bool alternateBlink( unsigned int n )const;// 6
+    bool checkerBlink( unsigned int n )const;// 7 checker board fill
 
     // patterns for 2d
-    bool scrollColToRight( unsigned int n )const;
-    bool scrollColToLeft( unsigned int n )const;
-    bool scrollRowToBottom( unsigned int n )const;
-    bool scrollRowToTop( unsigned int n )const;
-    bool scrollBoxIn( unsigned int n )const;
-    bool scrollBoxOut( unsigned int n )const;
+    bool scrollColToRight( unsigned int n )const;// 10
+    bool scrollColToLeft( unsigned int n )const;// 11
+    bool scrollRowToBottom( unsigned int n )const;// 12
+    bool scrollRowToTop( unsigned int n )const;// 13
+    bool scrollBoxIn( unsigned int n )const;// 14
+    bool scrollBoxOut( unsigned int n )const;// 15
     // Mode: 0 = dn rt, 1 = up lt, 2 = dn lt, 3 = up lt
-    bool scrollDiagonal( unsigned int n, unsigned int Mode )const;
+    bool scrollDiagonal( unsigned int n, unsigned int Mode )const;// 16
+    // 17
+    bool scrollRingOut( unsigned int n )const;// 80
 
     LightPlayer2(){}
     ~LightPlayer2(){}
@@ -87,6 +97,7 @@ class LightPlayer2
     int getRow0()const{ return row0; }
     int getCol0()const{ return col0; }
     unsigned int getNumLts()const{ return numLts; }
+    Light* get_pLt0()const{ return pLt0; }
     // setters
     void setRows( int Rows ){ rows = Rows; setDrawMode(); }
     void setCols( int Cols ){ cols = Cols; setDrawMode(); }

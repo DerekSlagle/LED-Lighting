@@ -37,6 +37,27 @@ void LightPlayer2::setDrawMode()
         drawMode = 3;// is partly in grid
 }
 
+void LightPlayer2::firePattern( unsigned int pattIdx )
+{
+    if( pattIdx >= numPatterns ) return;
+    patternIter = pattIdx;
+    stepIter = stepTimer = 0;
+}
+
+void LightPlayer2::setToPlaySinglePattern( bool playSingle )
+{
+    playSinglePattern = playSingle;
+    if( playSingle )
+    {
+        patternIter = 0;
+        stepIter = getPattLength();// so update() returns
+    }
+    else
+    {
+        stepIter = stepTimer = 0;
+    }
+}
+
 void LightPlayer2::takeStep()
 {
     if( ++stepTimer >= pattData[ patternIter ].stepPause )
@@ -44,8 +65,9 @@ void LightPlayer2::takeStep()
         stepTimer = 0;// to next step
         if( ++stepIter >= getPattLength() )
         {
+            if( playSinglePattern ) return;// reset stepIter to replay pattern
             stepIter = 0;// to next pattern
-            if( ++patternIter >= numPatterns )
+            if( ++patternIter >= numPatterns && doRepeatSeq )
                 patternIter = 0;// reset cycle
         }
     }
@@ -53,6 +75,9 @@ void LightPlayer2::takeStep()
 
 void LightPlayer2::update()// assign as required
 {
+    if( patternIter >= numPatterns ) return;
+    if( playSinglePattern && stepIter >= getPattLength() ) return;
+
     if( drawMode == 1 )
     {
         if( drawOffLt ) updateIsGrid();
@@ -76,7 +101,7 @@ void LightPlayer2::updateIsGrid()// assign as desired
         else *( pLt0 + n ) = offLt;
     }
 
-    takeStep();
+ //   takeStep();
 }
 
 void LightPlayer2::updateIsGridOnOnly()// for drawing after another player
@@ -84,7 +109,7 @@ void LightPlayer2::updateIsGridOnOnly()// for drawing after another player
     for( unsigned int n = 0; n < numLts; ++n )
         if( getState(n) ) *( pLt0 + n ) = onLt;
 
-    takeStep();
+ //   takeStep();
 }
 
 void LightPlayer2::updateSub()
@@ -107,7 +132,7 @@ void LightPlayer2::updateSub()
         }
     }
 
-    takeStep();
+ //   takeStep();
 }
 
 void LightPlayer2::updateSubOnOnly()// writes only to onLt
@@ -128,7 +153,7 @@ void LightPlayer2::updateSubOnOnly()// writes only to onLt
         }
     }
 
-    takeStep();
+//   takeStep();
 }
 
 uint8_t LightPlayer2::getPattLength()const
@@ -143,6 +168,8 @@ uint8_t LightPlayer2::getPattLength()const
     if( funcIdx == 12 || funcIdx == 13 ) return rows;// scrollRow
     if( funcIdx == 14 || funcIdx == 15 ) return cols/2;// BoxIn, BoxOut
     if( funcIdx == 16 ) return rows + cols;// scrollDiagonal
+
+    if( funcIdx == 80 ) return static_cast<uint8_t>( ( cols + rows )/4 );// scrollRingOut
     return 1;
 }
 
@@ -169,6 +196,7 @@ bool LightPlayer2::getState( unsigned int n )const
         case 14 : return scrollBoxIn( n );
         case 15 : return scrollBoxOut( n );
         case 16 : return scrollDiagonal( n, param );
+        case 80 : return scrollRingOut( n );
 
         default: return false;// offLight
     }
@@ -240,13 +268,29 @@ bool LightPlayer2::scrollBoxOut( unsigned int n )const
 }
 
 // 0 = dn rt, 1 = up lt, 2 = dn lt, 3 = up rt
-bool LightPlayer2::scrollDiagonal( unsigned int n, unsigned int Mode )const
+bool LightPlayer2::scrollDiagonal( unsigned int n, unsigned int Mode )const// 16
 {
     int r = n/cols, c = n%cols;
     if( Mode == 0 && (int)stepIter >= r ) return c == (int)stepIter - r;// dn rt
     if( Mode == 1 ) return c == cols - 1 - (int)stepIter + rows - 1 - r;// up lt
     if( Mode == 2 ) return c == cols - 1 - (int)stepIter + r;// dn lt
     if( Mode == 3 ) return c == (int)stepIter + r - rows - 1;// up rt
+
+    return false;
+}
+
+bool LightPlayer2::scrollRingOut( unsigned int n )const// 80
+{
+//    float RmaxSq = ( cols*cols + rows*rows )*0.25f;
+    int r = n/cols, c = n%cols;
+    const unsigned int& Param = pattData[ patternIter ].param;
+
+ //   float Ry = ( rows - 1 + stepIter - r ), Rx = ( cols - 1 + stepIter - c );
+    float Ry = ( rows/2 - r ), Rx = ( cols/2 - c );
+    float RnSq = ( Rx*Rx + Ry*Ry )*0.25f;
+ //   if( RnSq > RmaxSq ) return false;// radius too large
+    if( RnSq >= ( stepIter )*( stepIter ) && RnSq < ( stepIter + Param )*( stepIter + Param ) )
+        return true;
 
     return false;
 }
