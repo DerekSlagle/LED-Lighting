@@ -67,6 +67,8 @@ class LightPlayer2
     bool crissCross( unsigned int n, unsigned int numInGroup )const;// 5
     bool alternateBlink( unsigned int n )const;// 6
     bool checkerBlink( unsigned int n )const;// 7 checker board fill
+    bool emptyFromRight( unsigned int n )const { return !fillFromRight(n); }// 8
+    bool emptyFromLeft( unsigned int n )const { return !fillFromLeft(n); }// 9
 
     // patterns for 2d
     bool scrollColToRight( unsigned int n )const;// 10

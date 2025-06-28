@@ -162,6 +162,7 @@ uint8_t LightPlayer2::getPattLength()const
 
     if( funcIdx == 0 ) return 1;// pause pattern
     if( funcIdx >= 1 && funcIdx <= 5 ) return numLts;
+    if( funcIdx == 8 || funcIdx == 9 ) return numLts;// emptyFromRight, Left
     if( funcIdx == 6 ) return pattData[ patternIter ].param;// alternateBlink
     if( funcIdx == 7 ) return pattData[ patternIter ].param;// checkerBlink
     if( funcIdx == 10 || funcIdx == 11 ) return cols;// scrollCol
@@ -188,6 +189,8 @@ bool LightPlayer2::getState( unsigned int n )const
         case 5 : return crissCross( n, param );
         case 6 : return alternateBlink( n );
         case 7 : return checkerBlink( n );
+        case 8 : return emptyFromRight( n );
+        case 9 : return emptyFromLeft( n );
         // 2d patterns
         case 10 : return scrollColToRight( n );
         case 11 : return scrollColToLeft( n );
