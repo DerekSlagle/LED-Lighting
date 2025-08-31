@@ -131,7 +131,7 @@ void RingPlayer::updateWave( float dt )
         float fadeU = 1.0f;
         if( Rn > fadeRadius )
         {
-            float fadeU = static_cast<float>( fadeRadius + fadeWidth - Rn )/static_cast<float>( fadeWidth );
+            fadeU = static_cast<float>( fadeRadius + fadeWidth - Rn )/static_cast<float>( fadeRadius + fadeWidth );
             if( fadeU < 0.01f ) continue;          
         }
 
@@ -168,7 +168,7 @@ void RingPlayer::updateWave( float dt )
         isPlaying = false;
 }
 
-// static methods. FloatAll stores R0, RF, Rn, fadeRate for each player
+// static methods. FloatAll stores R0, RF, fadeRate for each player
 // LtAssAll stores LtAssigned for each player
 void RingPlayer::updatePulseAll( RingPlayer* pRP, int numRP, float dt, float* FloatAll, bool* LtAssAll )
 {
@@ -178,6 +178,7 @@ void RingPlayer::updatePulseAll( RingPlayer* pRP, int numRP, float dt, float* Fl
     Light* p_Lt0 = pRP[0].pLt0;
     for( int i = 1; i < numRP; ++i )
     {
+        if( !pRP[i].isPlaying ) continue;
         if( pRP[i].rows != Rows ) return;
         if( pRP[i].cols != Cols ) return;
          if( pRP[i].pLt0 != p_Lt0 ) return;
@@ -185,17 +186,18 @@ void RingPlayer::updatePulseAll( RingPlayer* pRP, int numRP, float dt, float* Fl
     
     for( int k = 0; k < numRP; ++k )
     {
+        if( !pRP[k].isPlaying ) continue;
         LtAssAll[k] = false;// pattern ends when no Light is assigned
         pRP[k].tElap += dt;
 
         float R0 = pRP[k].ringSpeed*pRP[k].tElap;// by RP
-        FloatAll[ 4*k ] = R0;// by RP
+        FloatAll[ 3*k ] = R0;// by RP
     //  float R0sq = R0*R0;
         float RF = R0 + pRP[k].ringWidth;// by RP
-        FloatAll[ 4*k + 1 ] = R0 + pRP[k].ringWidth;// by RP
+        FloatAll[ 3*k + 1 ] = R0 + pRP[k].ringWidth;// by RP
     //  float RFsq = RF*RF;
         float fadeRate = 2.0f/pRP[k].ringWidth;// by RP
-        FloatAll[ 4*k + 2 ] = fadeRate;
+        FloatAll[ 3*k + 2 ] = fadeRate;
     }
 
     for( int n = 0; n < Rows*Cols; ++n )
@@ -208,11 +210,12 @@ void RingPlayer::updatePulseAll( RingPlayer* pRP, int numRP, float dt, float* Fl
         // each player
         for( int k = 0; k < numRP; ++k )
         {
+            if( !pRP[k].isPlaying ) continue;
             float Ry = ( pRP[k].fRowC - r ), Rx = ( pRP[k].fColC - c );// by RP
             float RnSq = ( Rx*Rx + Ry*Ry )*0.25f;      
 
-            float R0 = FloatAll[ 4*k ];
-            float RF = FloatAll[ 4*k + 1 ];
+            float R0 = FloatAll[ 3*k ];
+            float RF = FloatAll[ 3*k + 1 ];
             // inside or outside of ring = no draw
             if( RnSq < R0*R0 || RnSq > RF*RF )
                 continue;
@@ -230,7 +233,7 @@ void RingPlayer::updatePulseAll( RingPlayer* pRP, int numRP, float dt, float* Fl
             // within ring R0 <= Rn < Rf
         //  LtAssigned = true;
             LtAssAll[k] = true;
-            float fadeRate = FloatAll[ 4*k + 2 ];
+            float fadeRate = FloatAll[ 3*k + 2 ];
             float dU = fadeRate*( Rnk - R0 );// if R0 < Rn < Rmid
             float Rmid = 0.5f*( R0 + RF );
             if( Rnk > Rmid ) dU = fadeRate*( RF - Rnk );
@@ -264,7 +267,7 @@ void RingPlayer::updatePulseAll( RingPlayer* pRP, int numRP, float dt, float* Fl
         if( LtAssAll[k] && !pRP[k].isVisible ) 
             pRP[k].isVisible = true;// has reached the grid
 
-        float R0 = FloatAll[ 4*k ];
+        float R0 = FloatAll[ 3*k ];
         if( pRP[k].isVisible && ( !LtAssAll[k] || ( R0 >= pRP[k].fadeRadius + pRP[k].fadeWidth ) ) )
             pRP[k].isPlaying = false;// animation complete
     }
