@@ -3,6 +3,20 @@
 
 #include<cmath>
 #include "Light.h"
+#include "FileParser.h"
+
+struct RPdata
+{
+    Light hiLt, loLt;
+    float fRowC = 0.0f;
+    float fColC = 0.0f;
+    float ringSpeed = 100.0f;// center radius = ringSpeed*tElap
+    float ringWidth = 2.0f;// Light spaces
+    float fadeRadius = 50.0f;// no fade for high value. Animation ends when no Light is written to.
+    float fadeWidth = 4.0f;
+    float Amp = 1.0f;// limit blending of hiLt and loLt
+    bool init( FileParser& FP );
+};
 
 class RingPlayer
 {
@@ -32,9 +46,20 @@ class RingPlayer
         fadeWidth = FadeWidth;// fade rate
     }
 
+    void setup( const RPdata& RPD )
+    {
+        setRingProps( RPD.ringSpeed, RPD.ringWidth, RPD.fadeRadius, RPD.fadeWidth );
+        setRingCenter( RPD.fColC, RPD.fRowC );
+        hiLt = RPD.hiLt;
+        loLt = RPD.loLt;
+        Amp = RPD.Amp;
+    }
+
     bool isPlaying = false;
+    bool isVisible = false;// allows off grid wave to grow
     bool onePulse = true;
     bool isRadiating = false;// wave
+    int direction = 1;
     float stopTime = 0.0f;// no write for R < stopTime*ringSpeed
     void StopWave()
     {
@@ -46,6 +71,7 @@ class RingPlayer
     {
         stopTime = 0.0f;
         isPlaying = true;
+        isVisible = false;
         if( onePulse )
         {
             tElap = -0.8f*ringWidth/ringSpeed;
@@ -65,6 +91,9 @@ class RingPlayer
 
     RingPlayer(){}
     ~RingPlayer(){}
+
+    // static methods for use with arrays. Visit each Light just once to update for all
+    static void updatePulseAll( RingPlayer* pRP, int numRP, float dt, float* FloatAll, bool* LtAssAll );
 
     protected:
 
