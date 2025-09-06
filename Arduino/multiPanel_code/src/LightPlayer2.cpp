@@ -245,7 +245,7 @@ uint16_t LightPlayer2::getPattLength()const
     if( funcIdx == 14 || funcIdx == 15 ) return cols/2;// BoxIn, BoxOut
     if( funcIdx == 16 ) return rows + cols;// scrollDiagonal
 
-    if( funcIdx == 80 ) return static_cast<uint16_t>( ( cols + rows )/4 );// scrollRingOut
+    if( funcIdx == 80 ) return static_cast<uint16_t>( ( cols + rows )/3.0f );// scrollRingOut
     // user defined
     if( funcIdx == 100 && getPatt100Length ) return getPatt100Length();// scrollDiagonal
 

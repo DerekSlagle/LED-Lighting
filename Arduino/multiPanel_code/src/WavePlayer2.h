@@ -41,8 +41,7 @@ class WavePlayer2
     void bindToGrid( Light& r_Lt0, unsigned int GridRows, unsigned int GridCols );
     void setGridBounds( int Row0, int Col0, int GridRows, int GridCols )
     { row0 = Row0; col0 = Col0; gridRows = GridRows; gridCols = GridCols; setDrawMode(); }
-    void setTargetRect( int Rows, int Cols, int Row0, int Col0 );
-
+    void setTargetRect( int Rows, int Cols, int Row0, int Col0 );    
 
     WavePlayer2(){}
     ~WavePlayer2(){}

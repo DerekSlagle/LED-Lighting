@@ -48,6 +48,17 @@ class slidePot
 
         return steadyVal;
     }
+
+    // returns change in steadyVal
+    int updateChange()
+    {
+        int SVnow = steadyVal;
+        update();
+        return steadyVal - SVnow;
+    }
+    
 };
+
+
 
 #endif // SLIDEPOT_H
