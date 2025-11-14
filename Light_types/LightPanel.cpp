@@ -1,55 +1,90 @@
 #include "LightPanel.h"
 
-bool LightPanel::init( Light *p_Src0, int GridRows, int GridCols, int SrcRows, int SrcCols, int SrcRow0, int SrcCol0, int TgtRows, int TgtCols )
-{  
-    if( !p_Src0 ) return false;// nullptr
-
-    pSrc0 = p_Src0;
-    gridRows = GridRows;
-    gridCols = GridCols;
-    srcRows = SrcRows; 
-    srcCols = SrcCols; 
-    row0 = SrcRow0; 
-    col0 = SrcCol0;
-    tgtRows =  TgtRows; 
-    tgtCols = TgtCols;
-    if( srcRows*srcCols != tgtRows*tgtCols ) return false;// number of Lights must be equal
-    if( srcRows == tgtRows || srcCols == tgtCols ) return true;// matching
-    if( srcRows == tgtCols || srcCols == tgtRows ) return true;// cross wise
-    return false;
-  }
-
+/*
 void LightPanel::update()const// write to target array
 {
-  if( !pTgt0 ) return;
-  
-  if( rotIdx == 0 )// no rotation
-  {
-     const Light* pSrcBase = pSrc0 + row0*gridCols + col0;
-    if( srcRows == tgtRows )// dimensions are the same
+    // Light in source
+    const Light* pSrcBase = pSrc0 + row0*srcCols + col0;
+
+    for( int r = 0; r < rows; ++r )
     {
-      for( int r = 0; r < srcRows; ++r )
-      {
-          const Light* pSrcRow = pSrcBase + r*gridCols;
-          Light* pTgtRow = pTgt0 + r*tgtCols;
-          for( int c = 0; c < srcCols; ++c )
-          {
-              pTgtRow[c] = pSrcRow[c];
-          }
-      }
-    }
-    else// dimensions are perpendicular
-    {
-      updateSideways();
+        const Light* pSrcRow = pSrcBase + r*srcCols;
+        Light* pTgtRow = pTgt0 + r*cols;
+        for( int c = 0; c < cols; ++c )
+        {
+          if( rotIdx == 0 )
+            pTgtRow[c] = pSrcRow[c];
+          else
+            *( mapLightPosition( r, c ) ) = pSrcRow[c];
+        }
     }
 
     if( type == 2 ) reverseOddRows( true );
-     return;
-  }
+}
+*/
 
-  // rotate
-  switch( rotIdx )
-  {
+void LightPanel::updateSideways()const
+{
+    if( !swapTgtRCs ) return;
+
+    const Light* pSrcBase = pSrc0 + row0*srcCols + col0;
+
+    if( rotIdx == 0 )
+    {
+        Light* pTgtBase = pTgt0 + rows*( cols - 1 );// start of last row
+        for( int r = 0; r < rows; ++r )
+        {
+            const Light* pSrcRow = pSrcBase + r*srcCols;
+            for( int c = 0; c < cols; ++c )
+            {
+                pTgtBase[ r - c*rows ] = pSrcRow[c];
+            }
+        }
+    }
+    else if( rotIdx == 2 )
+    {
+        Light* pTgtBase = pTgt0 + ( rows - 1 );// end of 1st row
+        for( int r = 0; r < rows; ++r )
+        {
+            const Light* pSrcRow = pSrcBase + r*srcCols;
+            for( int c = 0; c < cols; ++c )
+            {
+                pTgtBase[ c*rows - r ] = pSrcRow[c];
+            }
+        }
+    }
+
+    if( type == 2 ) reverseOddRowsSideways();
+}
+
+void LightPanel::update()const// write to target array
+{
+    if( swapTgtRCs )
+    {
+        updateSideways();
+        return;
+    }
+
+    if( rotIdx == 0 )// no rotation
+    {
+        const Light* pSrcBase = pSrc0 + row0*srcCols + col0;
+        for( int r = 0; r < rows; ++r )
+        {
+            const Light* pSrcRow = pSrcBase + r*srcCols;
+            Light* pTgtRow = pTgt0 + r*cols;
+            for( int c = 0; c < cols; ++c )
+            {
+                pTgtRow[c] = pSrcRow[c];
+            }
+        }
+
+        if( type == 2 ) reverseOddRows( true );
+        return;
+    }
+
+    // rotate
+    switch( rotIdx )
+    {
     case 1 :// 90 degrees cw
      rotateCW();
     break;
@@ -64,41 +99,26 @@ void LightPanel::update()const// write to target array
 
     default: break;
 
-  }
-
-  if( type == 2 ) reverseOddRows( true );
-     return;
-}
-
-void LightPanel::updateSideways()const// if tgtCols == srcRows, etc
-{
-  const Light* pSrcBase = pSrc0 + row0*gridCols + col0;// read only
-  
-
-  for( int r = 0; r < srcRows; ++r )
-  {
-    const Light* pSrcRow = pSrcBase + r*gridCols;
-
-   // Light* pTgtCol = pTgt0 + r;// backwards
-    // a 2nd try
-    Light* pTgtCol = pTgt0 + r + ( tgtRows - 1 )*tgtCols;
-
-    for( int c = 0; c < srcCols; ++c )
-    {
-   //   pTgtCol[ c*tgtCols ] = pSrcRow[c];// backwards
-      // 2nd try
-      pTgtCol[ -c*tgtCols ] = pSrcRow[c];
     }
-  }
+
+    if( type == 2 ) reverseOddRows( true );
+
+    return;
 }
 
 void LightPanel::reverseOddRows( bool inTarget )const// for type = 2
 {
-  Light* itBegin = inTarget ? pTgt0 : pSrc0;
-  for( int r = 0; r < tgtRows; r += 2 )
-  {
-    Light *itLt = itBegin + r*tgtCols;
-    Light* itRt = itLt + tgtCols - 1;
+    if( swapTgtRCs )
+    {
+        reverseOddRowsSideways();
+        return;
+    }
+
+    Light* itBegin = inTarget ? pTgt0 : pSrc0;
+    for( int r = 0; r < rows; r += 2 )
+    {
+    Light *itLt = itBegin + r*cols;
+    Light* itRt = itLt + cols - 1;
     while( itLt < itRt )
     {
       Light tempLt = *itLt;
@@ -107,41 +127,57 @@ void LightPanel::reverseOddRows( bool inTarget )const// for type = 2
       ++itLt;
       --itRt;
     }
-  }
+    }
+}
+
+void LightPanel::reverseOddRowsSideways()const// for type = 2
+{
+    Light* itBegin = pTgt0;
+    for( int c = 0; c < cols; c += 2 )
+    {
+    Light *itLt = itBegin + c*rows;
+    Light* itRt = itLt + rows - 1;
+    while( itLt < itRt )
+    {
+      Light tempLt = *itLt;
+      *itLt = *itRt;
+      *itRt = tempLt;
+      ++itLt;
+      --itRt;
+    }
+    }
 }
 
 // entire panel
 void LightPanel::rotateCW()const// rotate image 90 degrees clockwise
 {
-  if( tgtRows != tgtCols ) return;// square panels only
+    if( rows != cols ) return;
+    const Light* pSrcBase = pSrc0 + row0*srcCols + col0;// Light in source
+    Light* pLtCorner = pTgt0 + cols - 1;// lower left corner of target
 
-  const Light* pSrcBase = pSrc0 + row0*srcCols + col0;// Light in source
-    Light* pLtCorner = pTgt0 + tgtCols - 1;// lower left corner of target
-
-    for( int r = 0; r < tgtRows; ++r )
+    for( int r = 0; r < rows; ++r )
     {
-        const Light* pSrcRow = pSrcBase + r*srcCols;// source        
-        for( int c = 0; c < tgtCols; ++c )
+        const Light* pSrcRow = pSrcBase + r*srcCols;// source
+        for( int c = 0; c < cols; ++c )
         {
-          Light* pTgtRow = pLtCorner + c*tgtCols;// target
+          Light* pTgtRow = pLtCorner + c*cols;// target
           pTgtRow[-r] = pSrcRow[c];
         }
     }
 }
 
   void LightPanel::rotateCCW()const// 90 degrees counter clockwise
-  {    
-    if( tgtRows != tgtCols ) return;// square panels only
-
+  {
+    if( rows != cols ) return;
     const Light* pSrcBase = pSrc0 + row0*srcCols + col0;// Light in source
-    Light* pLtCorner = pTgt0 + tgtCols*( tgtRows - 1 );// lower left corner of target
+    Light* pLtCorner = pTgt0 + cols*( rows - 1 );// lower left corner of target
 
-    for( int r = 0; r < tgtRows; ++r )
+    for( int r = 0; r < rows; ++r )
     {
-        const Light* pSrcRow = pSrcBase + r*srcCols;// source             
-        for( int c = 0; c < tgtCols; ++c )
-        {          
-          Light* pTgtRow = pLtCorner - c*tgtCols;// target 
+        const Light* pSrcRow = pSrcBase + r*srcCols;// source
+        for( int c = 0; c < cols; ++c )
+        {
+          Light* pTgtRow = pLtCorner - c*cols;// target
           pTgtRow[r] = pSrcRow[c];
         }
     }
@@ -150,14 +186,14 @@ void LightPanel::rotateCW()const// rotate image 90 degrees clockwise
   void LightPanel::rotate180()const// rotate image 180 degrees
   {
     const Light* pSrcBase = pSrc0 + row0*srcCols + col0;// Light in source
-    Light* pLtCorner = pTgt0 + tgtRows*tgtCols - 1;// lower right corner of target
+    Light* pLtCorner = pTgt0 + rows*cols - 1;// lower right corner of target
 
-    for( int r = 0; r < tgtRows; ++r )
+    for( int r = 0; r < rows; ++r )
     {
-        const Light* pSrcRow = pSrcBase + r*srcCols;// source   
-        Light* pTgtRow = pLtCorner - r*tgtCols;// target     
-        for( int c = 0; c < tgtCols; ++c )
-        {          
+        const Light* pSrcRow = pSrcBase + r*srcCols;// source
+        Light* pTgtRow = pLtCorner - r*cols;// target
+        for( int c = 0; c < cols; ++c )
+        {
           pTgtRow[-c] = pSrcRow[c];
         }
     }

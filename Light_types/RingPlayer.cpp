@@ -69,7 +69,7 @@ void RingPlayer::updatePulse( float dt )
             float fadeU = 1.0f;// no fade        
             if( Rn > fadeRadius )
             {
-                fadeU = static_cast<float>( fadeRadius + fadeWidth - Rn )/static_cast<float>( fadeWidth );
+                fadeU = static_cast<float>( fadeRadius + fadeWidth - Rn )/static_cast<float>( fadeRadius + fadeWidth );
                 if( fadeU < 0.01f ) continue;// last frame over step
             }
 
