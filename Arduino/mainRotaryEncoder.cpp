@@ -1,5 +1,4 @@
 // display a full color image
-// use a rotary encoder to adjust LED brightness
 
 #include <Arduino.h>
 #include <FastLED.h>
@@ -52,9 +51,9 @@ intDisplay intDisp_A;// brightness
 // a rotary encoder to adjust brightness
 int pinEncoderCLK = 6, pinEncoderDT = 7, pinEncoderSW = 8;
 int lastClkState = HIGH;
-switchSPST pushButtEncSW( pinEncoderSW, 0.4f, false );// for encoder SW input
+switchSPST pushButtEncSW( pinEncoderSW, 0.06f );// for encoder SW input
 void updateEncoder();// callback for interrupt
-volatile int LEDbrightness = 32;// assigned in updateEncoder()
+volatile int LEDbrightness = 64;// assigned in updateEncoder() to range 0 to 510. Use half value as brightness
 
 void setup()
 {
@@ -73,9 +72,9 @@ void setup()
   fileIndex = 0;
   setImage( pFileNames[fileIndex].c_str() );
   // display initial brightness
-  intDisp_A.init( LightArr[0], gridRowsFull, gridColsFull, 1, 3, Light(0,0,40), Light(0,200,40) );
-  LEDbrightness = 32;
-  intDisp_A.value = LEDbrightness;// brightness
+  intDisp_A.init( LightArr[0], gridRowsFull, gridColsFull, 1, 3, gridColor, Light(120,120,120) );
+  LEDbrightness = 64;
+  intDisp_A.value = LEDbrightness/2;// brightness
   intDisp_A.update();// writes to LightArr
 
   // for encoder
@@ -115,7 +114,7 @@ void loop()
   pushButtEncSW.update( dtLoop );
   if( pushButtEncSW.pollEvent() == 1 )// press event
   {
-    LEDbrightness = 32;
+    LEDbrightness = 64;// double the brightness value
   }
 
   bool updateLEDS = false;
@@ -129,7 +128,7 @@ void loop()
   {
     if( currBrightness != LEDbrightness )// encoder changed
     {
-      intDisp_A.value = LEDbrightness;// reset
+      intDisp_A.value = LEDbrightness/2;// reset
       currBrightness = LEDbrightness;// reset
       FastLED.setBrightness( intDisp_A.value%255 );
       intDisp_A.update();
@@ -156,7 +155,7 @@ void updateEncoder()// callback for interrupt
 
   if (currentClkState != lastClkState) { // Check for a change in CLK
     if (currentDtState != currentClkState) { // Determine direction
-      if( LEDbrightness < 255 ) LEDbrightness++; // Clockwise
+      if( LEDbrightness < 510 ) LEDbrightness++; // Clockwise
     } else {
       if( LEDbrightness > 0 ) LEDbrightness--; // Counter-clockwise
     }    
