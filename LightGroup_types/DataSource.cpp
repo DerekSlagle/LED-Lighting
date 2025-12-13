@@ -33,7 +33,9 @@ DataSource& DataSource::operator = ( const DataSource& DS )// assignment
 
     pColor = DS.pColor;
     numColors = DS.numColors;
-    decRfcCount();// decrement old rfcCount. Free if == 0
+
+    if( pRfcCount != DS.pRfcCount )// team change
+        decRfcCount();// decrement old rfcCount. Free if == 0
     // new
     pRfcCount = DS.pRfcCount;
     if( pRfcCount ) ++( *pRfcCount );// increment new rfcCount
@@ -81,7 +83,7 @@ bool DataSource::update( float dt )// true when frame changes
     tElapFrame += dt;
     if( tElapFrame >= tFrame )
     {
-        tElapFrame = 0.0f;
+        tElapFrame -= tFrame;
         frameIter = ( 1 + frameIter )%numFrames;
         return true;
     }
@@ -135,6 +137,8 @@ void DataSource::setDataAndColors( LightGrid& rTgt, std::ifstream& fin )// alloc
 Light DataSource::getLt( int r, int c )const
 {
     unsigned int n = rows*cols*frameIter + r*cols + c;
+    if( doBlend ) return getBlendedLight(n);
+
     uint8_t idx = 0;
     if( numColors > 8 )// 9 to 16
     {
@@ -158,4 +162,49 @@ Light DataSource::getLt( int r, int c )const
     }
 
     return pColor[ idx ];
+}
+
+Light DataSource::getBlendedLight( int n )const
+{
+    int nextFrIter = ( 1 + frameIter )%numFrames;// playForward true
+//    if( !playForward )
+ //   {
+  //      nextFrIter = frameIter - 1;
+ //       if( nextFrIter < 0 ) nextFrIter = numFrames - 1;
+ //   }
+
+    float U = tElapFrame/tFrame;
+    if( U > 1.0f ) U = 1.0f;// next: 0 to 1
+    float V = 1.0f - U;// current: 1 to 0
+
+    // index to same Light last frame
+    int nextN = n + rows*cols*( nextFrIter - frameIter );
+
+    uint8_t idx = 0, nextIdx = 0;
+    if( numColors > 8 )// 9 to 16
+    {
+        nextIdx = BA.getQuadBit( nextN );
+        idx = BA.getQuadBit( n );// 4 bits per index
+    }
+    else if( numColors > 4 )// 5 to 8
+    {
+        nextIdx = BA.getTriBit( nextN );
+        idx = BA.getTriBit( n );// 3 bits per index
+    }
+    else if( numColors > 2 )// 3 or 4
+    {
+        nextIdx = BA.getDblBit( nextN );
+        idx = BA.getDblBit( n );// 3 bits per index
+    }
+    else// 2 colors
+    {
+        nextIdx = BA.getBit( nextN );
+        idx = BA.getBit( n ) ? 1 : 0;// 1 bit per index
+    }
+
+    // blend = next*U + current*V
+    float fr = ( pColor[ nextIdx ].r )*U + ( pColor[ idx ].r )*V;
+    float fg = ( pColor[ nextIdx ].g )*U + ( pColor[ idx ].g )*V;
+    float fb = ( pColor[ nextIdx ].b )*U + ( pColor[ idx ].b )*V;
+    return Light( fr, fg, fb );
 }

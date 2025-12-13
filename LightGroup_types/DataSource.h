@@ -8,6 +8,7 @@
 #include "../utility/bitArray.h"
 
 // owns colors and color index data
+// uses a reference count so the last user destroyed deletes the arrays and pRfcCount
 class DataSource : public LightSource
 {
     public:
@@ -17,6 +18,9 @@ class DataSource : public LightSource
     unsigned int numColors = 2;// 2 to 16
     unsigned int frameIter = 0, numFrames = 1;
     bool isPlaying = true;// stops animation
+    bool doBlend = false;
+    Light getBlendedLight( int n )const;
+
     // timing frame rate
     float tFrame = 0.04f, tElapFrame = 0.0f;// 25 fps
     bool update( float dt );// true when frame changes. Also updates position
