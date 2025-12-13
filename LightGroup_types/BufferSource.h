@@ -8,21 +8,24 @@ class BufferSource : public LightSource
 {
     public:
     LightGrid* pSrcBuff = nullptr;// must point to rows*cols Lights (at least)
-    virtual Light getLt( int r, int c )const
+    int frameIter = 0, numFrames = 1;
+    bool isPlaying = true;// stops animation
+    // timing frame rate
+    float tFrame = 0.04f, tElapFrame = 0.0f;// 25 fps
+    bool update( float dt );// true when frame changes. Also updates position
+    void nextFrame()
     {
-        if( !pSrcBuff ) return Light();
-        if( r < 0 || r >= pSrcBuff->rows ) return Light();// r out of range
-        if( c < 0 || r >= pSrcBuff->cols ) return Light();// c out of range
-
-        return pSrcBuff->pLt0[ r*cols + c ];
+        frameIter = ( 1 + frameIter )%numFrames;
     }
+    void prevFrame();
 
-    void setSource( LightGrid& rSrcBuff )
-    {
-        pSrcBuff = &rSrcBuff;
-        rows = rSrcBuff.rows;
-        cols = rSrcBuff.cols;
-    }
+    virtual Light getLt( int r, int c )const;
+    void setSource( LightGrid& rSrcBuff, int NumFrames = 1, float t_Frame = 0.05f );
+
+    // fade into next frame
+    bool doBlend = false;
+    bool playForward = true;
+    Light getBlendedLight( int n )const;
 
     BufferSource(){}
     virtual ~BufferSource(){}
