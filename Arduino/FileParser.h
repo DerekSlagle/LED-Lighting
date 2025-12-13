@@ -1,6 +1,7 @@
 #pragma once
 #include <SD.h>
 #include <WString.h>
+#include "Light.h"
 
 class FileParser {
 public:
@@ -39,6 +40,9 @@ public:
     String readLine();
     void writeLine(const String& line);
     void flush();
+    bool readIntArray( int* pArr, int Size );
+    bool readByteArray( uint8_t* pArr, int Size );
+    bool readLightArray( Light* pLt, int Size, Light bkgdLt );
 
 private:
     File file;

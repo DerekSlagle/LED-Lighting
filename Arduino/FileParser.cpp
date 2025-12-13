@@ -184,4 +184,228 @@ void FileParser::skipWhitespace() {
         }
         file.read(); // Skip this character
     }
-} 
+}
+
+bool FileParser::readByteArray( uint8_t* pArr, int Size )
+{
+    if (mode != Mode::READ || !file) return false;
+  //  if( Size == file.read( pArr, Size ) ) return true;// faster but result is garbage
+  //  return false;
+
+    int numRead = 0;
+    char N = 0;
+    bool newN = true;
+    while( file.available() )
+    {        
+        char c = file.read();        
+        if (c != ' ' && c != '\n' && c != '\r' && c != '\t')
+        {
+            char digit = c - '0';
+            if( newN )
+            {
+                N = digit;
+                newN = false;                
+            }
+            else
+            {
+                N = 10*N + digit;
+            }
+        }
+        else// white space
+        { 
+            if( !newN )
+            {       
+                pArr[ numRead ] = (uint8_t)N;
+                if( ++numRead == Size ) return true;
+                newN = true;       
+            }
+        }        
+    }
+
+    // no space at end? get the last value
+    if( !newN )
+    {       
+        pArr[ numRead ] = (uint8_t)N;
+        if( ++numRead == Size ) return true;
+    }
+
+    return false;
+}
+
+// working
+bool FileParser::readIntArray( int* pArr, int Size )
+{
+    if (mode != Mode::READ || !file) return false;
+    
+    int numRead = 0;
+    int N = 0;
+    bool newN = true;
+    while( file.available() )
+    {        
+        char c = file.read();        
+        if (c != ' ' && c != '\n' && c != '\r' && c != '\t')
+        {
+            if( newN )
+            {
+                N = (int)( c - '0' );
+                newN = false;
+            }
+            else
+            {
+                N = 10*N + (int)( c - '0' );
+            }
+        }
+        else// white space
+        { 
+            if( !newN )
+            {       
+                pArr[ numRead ] = N;
+                if( ++numRead == Size ) return true;
+                newN = true;       
+            }
+        }        
+    }
+
+    // no space at end? get the last value
+    if( !newN )
+    {       
+        pArr[ numRead ] = N;
+        if( ++numRead == Size ) return true;
+    }
+
+    return false;
+}
+
+// working!
+bool FileParser::readLightArray( Light* pLt, int Size, Light bkgdLt )
+{
+    if (mode != Mode::READ || !file) return false;
+
+    // for writing
+    uint8_t* pByte = &( pLt[0].r );// 1st byte
+
+    int numRead = 0;
+    char N = 0;// build up to byte value
+    bool newN = true;// index to byte in the Light = 0,1,2 or 3
+    int idxByte = 0;// 0,1,2 = r,g,b
+    while( file.available() )
+    {        
+        char c = file.read();        
+        if (c != ' ' && c != '\n' && c != '\r' && c != '\t')
+        {
+            char digit = c - '0';
+            if( newN )
+            {
+                N = digit;
+                newN = false;               
+            }
+            else
+            {
+                N = 10*N + digit;
+            }
+        }
+        else// white space
+        { 
+            if( !newN )
+            {      
+                ++idxByte;
+                if( idxByte < 4 )// 1,2,3 = r,g,b read
+                {
+                    *pByte = (uint8_t)N;
+                    ++pByte;
+                    newN = true;
+                }
+                else// alpha value and Light is read
+                {
+                    if( N == 0 )// assign bkgdLt to r,g,b just read
+                    {
+                        pByte[-3] = bkgdLt.r;
+                        pByte[-2] = bkgdLt.g;
+                        pByte[-1] = bkgdLt.b;
+                    }
+                    idxByte = 0;
+                    newN = true;
+                    // next Light
+                    if( ++numRead == Size ) return true; 
+                }       
+                      
+            }
+        }        
+    }
+
+    // no space at end? get the last value
+    if( !newN )
+    {      
+        ++idxByte;
+        if( idxByte < 4 )// r,g,b read
+        {
+            *pByte = (uint8_t)N;
+            ++pByte;
+            newN = true;
+        }
+        else// alpha value and Light is read
+        {
+            if( N == 0 )// assign bkgdLt to r,g,b just read
+            {
+                pByte[-3] = bkgdLt.r;
+                pByte[-2] = bkgdLt.g;
+                pByte[-1] = bkgdLt.b;
+            }
+            idxByte = 0;
+            newN = true;
+            // next Light
+            if( ++numRead == Size ) return true; 
+        }       
+                
+    }
+
+    return false;
+}
+
+/*
+// working!
+bool FileParser::readIntArray( int* pArr, int Size )
+{
+    if (mode != Mode::READ || !file) return false;
+    
+    int numRead = 0;
+    String token = "";
+     while( file.available() )
+     {        
+        char c = file.read();        
+        if (c != ' ' && c != '\n' && c != '\r' && c != '\t')
+        {
+            token += c;
+        }
+        else// white space
+        {
+            if (token.length() > 0) 
+            {
+                pArr[ numRead ] = token.toInt();
+                if( ++numRead == Size ) return true;
+                token = "";
+            }
+            continue;
+        }        
+     }
+
+    return false;
+}
+
+// also working
+bool FileParser::readIntArray( int* pArr, int Size )
+{
+    if (mode != Mode::READ || !file) return false;
+    
+    for( int n = 0; n < Size; ++n )
+    {
+        String token = getNextToken();
+        if (token.length() > 0) {
+            pArr[n] = token.toInt();
+        }
+        else return false;// did not catch them all
+    }
+
+    return true;
+}
+*/
