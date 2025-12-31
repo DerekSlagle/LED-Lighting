@@ -140,7 +140,12 @@ bool AL_WavePlayBlending::update( float dt )
     // updateWP()
     int nextWP = ( 1 + currWP )%numWP;// roll index
     tElapWP += dt;
+    tElapUp += dt;
+    // now corrupt the value
     dt *= timeScale;// for the player updates
+
+    // time across player updates
+    uint32_t startTime = micros();
 
     if( tElapWP < tPeriodWP )
     {
@@ -159,6 +164,14 @@ bool AL_WavePlayBlending::update( float dt )
       wvPlay[ currWP ].update(dt);
     }
 
+    // end timing and report
+    updateTime = ( micros() - startTime + 500 )/1000;// round to msec
+    if( tElapUp > 1.0f )
+    {
+      tElapUp = 0.0f;
+      updateDisplay();
+    }
+
     return true;
 }
 
@@ -173,9 +186,10 @@ bool AL_WavePlayBlending::handleEvent( ArduinoEvent& rEvent )
     {
         if( rEvent.ID == actButtID )
         {
-            if( menuIter == 0 )
+            if( menuIter == 2 )// adjust timeScale
             {
-           //     tFrame = 0.2f;
+              timeScale *= -1.0f;// toggle sign to reverse motion
+              updateDisplay();
             }
         }
         else if( rEvent.ID == menuButtID )// menu scroll button
@@ -209,7 +223,9 @@ bool AL_WavePlayBlending::handleEvent( ArduinoEvent& rEvent )
         else if( menuIter == 2 )
         {
             timeScale  += 0.05f*rEvent.value;
-            if( timeScale < 0.1f ) timeScale = 0.1f;
+            // clamp value. timeScale can be < 0
+            if( timeScale >= 0.0f && timeScale < 0.2f ) timeScale = 0.2f;
+            else if( timeScale < 0.0f && timeScale > -0.2f ) timeScale = -0.2f;
         }
 
         updateDisplay();
@@ -241,6 +257,12 @@ void AL_WavePlayBlending::updateDisplay()const
     // Quit
     msg += ( menuIter == numOptions - 1 ) ? "\n* " : "\n  ";
     msg += "QUIT to menu";
+    // updated once per second automatically
+    msg += "\nUpTime: ";
+    msg += updateTime;
+    if( (tElapWP > tPeriodWP) && (tElapWP < tPeriodWP + tTransWP) )// blending
+      msg += "\n  BLENDING";
+
     // write
     pDisplay->clear();
     pDisplay->printAt( 0, 0, msg.c_str(), 1 );

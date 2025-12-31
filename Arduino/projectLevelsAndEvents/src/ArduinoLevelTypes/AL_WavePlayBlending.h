@@ -44,6 +44,9 @@ class AL_WavePlayBlending : public ArduinoLevel
     int menuIter = 0;
     SSD1306_Display* pDisplay = nullptr;
     void updateDisplay()const;
+     // timed update for Home page
+    int updateTime = 0;
+    float tElapUp = 0.0f;// 1.0f limit in update()
 
     bool setup( const char* setupFilename, SSD1306_Display* p_Display );
     virtual bool update( float dt );
