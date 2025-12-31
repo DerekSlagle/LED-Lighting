@@ -12,13 +12,7 @@ void WavePlayer2::init( Light& r_Lt0, unsigned int GridRows, unsigned int GridCo
     setHiLight( HiLt );
     setLoLight( LoLt );
     tElapLt = tElapRt = 0.0f;
-    drawMode = 1;
-
-    // check
- //   unsigned int rd = HiLt.r, gn = HiLt.g, bu = HiLt.g;
- //   std::cout << "\nwvPlay.init() HiLt.r = " << rd << " HiLt.g = " << gn << " HiLt.b = " << bu;
- //   rd = LoLt.r; gn = LoLt.g; bu = LoLt.b;
- //   std::cout << "\n LoLt.r = " << rd << " LoLt.g = " << gn << " LoLt.b = " << bu;
+    drawMode = 1;    
 }
 
 void WavePlayer2::setDrawMode()
@@ -82,7 +76,6 @@ void WavePlayer2::setSeriesCoeffs( float* C_rt, unsigned int n_TermsRt, float* C
         for( unsigned int k = 0; k < nTermsRt; ++k )
         {
             C_Rt[k] /= sum;
-            std::cout << "\nC_Rt[" << k << "] = " << C_Rt[k];
         }
     }
 
@@ -97,11 +90,23 @@ void WavePlayer2::setSeriesCoeffs( float* C_rt, unsigned int n_TermsRt, float* C
         for( unsigned int k = 0; k < nTermsLt; ++k )
         {
             C_Lt[k] /= sum;
-            std::cout << "\nC_Lt[" << k << "] = " << C_Lt[k];
         }
     }
 }
 
+// allow dt < 0
+void WavePlayer2::update_tElapOnly( float dt )
+{
+    tElapRt += dt;
+    if( (dt >= 0.0f) && (tElapRt > periodRt) ) tElapRt -= periodRt;
+    else if( (dt < 0.0f) && (tElapRt < 0.0f) ) tElapRt += periodRt;
+
+    tElapLt += dt;
+    if( (dt >= 0.0f) && (tElapLt > periodLt) ) tElapLt -= periodLt;
+    else if( (dt < 0.0f) && (tElapLt < 0.0f) ) tElapLt += periodLt;
+}
+
+/*
 void WavePlayer2::update_tElapOnly( float dt )
 {
     tElapRt += dt;
@@ -109,6 +114,7 @@ void WavePlayer2::update_tElapOnly( float dt )
     tElapLt += dt;
     if( tElapLt > periodLt ) tElapLt -= periodLt;
 }
+*/
 
 Light WavePlayer2::getState( int n )const
 {
@@ -121,7 +127,10 @@ Light WavePlayer2::getState( int n )const
     if( C_Rt )
     {
         for( unsigned k = 0; k < nTermsRt; ++k )
-            yRt += C_Rt[k]*sinf( (k+1)*arg );
+        {
+            if( C_Rt[k] != 0.0f )
+                yRt += C_Rt[k]*sinf( (k+1)*arg );
+        }
     }
     else
         yRt = sinf( arg );
@@ -131,7 +140,8 @@ Light WavePlayer2::getState( int n )const
     if( C_Lt )
     {
         for( unsigned k = 0; k < nTermsLt; ++k )
-            yLt += C_Lt[k]*sinf( (k+1)*arg );
+            if( C_Lt[k] != 0.0f )
+                yLt += C_Lt[k]*sinf( (k+1)*arg );
     }
     else
         yLt = sinf( arg );
@@ -165,13 +175,20 @@ void WavePlayer2::update( float dt )
     else updatePartlyIn();
 }
 
-void WavePlayer2::updateIsGrid()// 1
+void WavePlayer2::draw()const
+{
+    if( drawMode == 1 ) updateIsGrid();
+    else if( drawMode == 2 ) updateAllIn();
+    else updatePartlyIn();
+}
+
+void WavePlayer2::updateIsGrid()const// 1
 {
     for( int n = 0; n < numLts; ++n )
         *( pLt0 + n ) = getState(n);
 }
 
-void WavePlayer2::updateAllIn()// 2
+void WavePlayer2::updateAllIn()const// 2
 {
     Light* pBase = pLt0 + gridCols*row0 + col0;
 
@@ -183,7 +200,7 @@ void WavePlayer2::updateAllIn()// 2
     }
 }
 
-void WavePlayer2::updatePartlyIn()// 3
+void WavePlayer2::updatePartlyIn()const// 3
 {
     Light* pBase = pLt0 + gridCols*row0 + col0;
 
@@ -201,4 +218,67 @@ void WavePlayer2::updatePartlyIn()// 3
             *( pRow + c ) = getState( r*cols + c );
         }
     }
+}
+
+// new. Plot as function. Color above = HiLight and below = LoLight
+void WavePlayer2::drawGraph()const
+{
+    Light HiLight( frHi, fgHi, fbHi );
+    Light LoLight( frLo, fgLo, fbLo );
+    Light* pBase = pLt0 + gridCols*row0 + col0;
+
+    for( int c = 0; c < cols; ++c )
+    {
+        if( c + col0 < 0 ) continue;
+        if( c + col0 >= gridCols ) break;
+
+        // find y for this c
+        float yRt = 0.0f;
+        float arg = ( (float)c/wvLenRt - tElapRt/periodRt )*6.283f;
+
+        if( C_Rt )
+        {
+            for( unsigned k = 0; k < nTermsRt; ++k )
+            {
+                if( C_Rt[k] != 0.0f )
+                    yRt += C_Rt[k]*sinf( (k+1)*arg );
+            }
+        }
+        else
+            yRt = sinf( arg );
+
+        float yLt = 0.0f;
+        arg = ( (float)c/wvLenLt + tElapLt/periodLt )*6.283f;
+        if( C_Lt )
+        {
+            for( unsigned k = 0; k < nTermsLt; ++k )
+                if( C_Lt[k] != 0.0f )
+                    yLt += C_Lt[k]*sinf( (k+1)*arg );
+        }
+        else
+            yLt = sinf( arg );
+
+        float y = AmpRt*yRt + AmpLt*yLt;
+        // scale to graph amplitude
+        y *= graphAmp;
+        // center up
+        y += rows/2;
+        int Rc = (int)y;
+        // down each column
+        for( int r = 0; r < Rc; ++r )
+        {
+            if( r + row0 < 0 ) continue;
+            if( r + row0 >= gridRows ) break;
+            pBase[ r*gridCols + c ] = HiLight;
+        }
+        // below
+        for( int r = Rc; r < rows; ++r )
+        {
+            if( r + row0 < 0 ) continue;
+            if( r + row0 >= gridRows ) break;
+            pBase[ r*gridCols + c ] = LoLight;
+        }
+    }
+
+    return;
 }

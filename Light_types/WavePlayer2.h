@@ -2,8 +2,7 @@
 #define WAVEPLAYER2_H
 
 #include<cmath>
-#include<iostream>
-#include "Light.h"
+#include "../Light.h"
 
 class WavePlayer2
 {
@@ -29,9 +28,13 @@ class WavePlayer2
     void setLoLight( const Light& Lt ){ frLo = (float)Lt.r; fgLo = (float)Lt.g; fbLo = (float)Lt.b; }
 
     void update( float dt );
+    void draw()const;// update() - time update
     void update_tElapOnly( float dt );
     Light getState( int n )const;
     Light getLight( int r, int c )const;
+    // new. Plot as function. Color above = HiLight and below = LoLight
+    void drawGraph()const;
+    float graphAmp = 4.0f;
 
     void init( Light& r_Lt0, unsigned int GridRows, unsigned int GridCols, Light HiLt, Light LoLt );
     void setWaveData( float AmpRt, float wvLen_lt, float wvSpd_lt, float wvLen_rt, float wvSpd_rt );
@@ -59,8 +62,8 @@ class WavePlayer2
     void setRow0( int Row0 ){ row0 = Row0; setDrawMode(); }
     void setCol0( int Col0 ){ col0 = Col0; setDrawMode(); }
 
-    protected:
     Light* pLt0 = nullptr;
+    protected:    
     int rows = 1, cols = 1;
     int row0 = 0, col0 = 0;// origin in grid
     int gridCols = 1, gridRows = 1;// bounding grid
@@ -68,9 +71,9 @@ class WavePlayer2
     int numLts = 1;// numLts = rows*cols
     int drawMode = 3;// 1: is grid, 2: is all in grid, 3: is partly in grid
     void setDrawMode();
-    void updateIsGrid();// 1
-    void updateAllIn();// 2
-    void updatePartlyIn();// 3
+    void updateIsGrid()const;// 1
+    void updateAllIn()const;// 2
+    void updatePartlyIn()const;// 3
 
     private:
 };
