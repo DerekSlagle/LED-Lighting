@@ -24,12 +24,17 @@ SSD1306_Display theOled;
 String OledString;
 bool doUpdateOled = false;
 
-#include "ArduinoLevelTypes/AL_BasicA.h"
-#include "ArduinoLevelTypes/AL_BasicB.h"
+const int numLevels = 5;
+int currLevel = 0;
+#include "ArduinoLevelTypes/AL_GalleryViewer.h"
+String ALGV_fileName;// for setup()
+#include "ArduinoLevelTypes/AL_WavePlayers.h"
 #include "ArduinoLevelTypes/ArdLvlScrolling.h"
 String ALS_fileName;// for setup() call above type
+#include "ArduinoLevelTypes/AL_WavePlayBlending.h"
+String WPB_fileName;// for setup() call above type
+#include "ArduinoLevelTypes/AL_RandomRings.h"
 
-char typeID = 'A';// just 'A' and 'B' for now
 // returns pointer to new level. Check for nullptr
 ArduinoLevel* startNewLevel();// new by typeID
 
@@ -38,8 +43,11 @@ switchSPST actButt( 2, 0.04f, false );// regular button. Press for selected Leve
 switchSPST menuButt( 3, 0.04f, true );// cap touch. Select a level
 
 // a digital display
-//#include "intDisplay.h"
-//intDisplay intDisp_A;// brightness
+#include "LightSourceTypes/IntegerSource.h"
+IntegerSource brightDisplay;// brightness
+float tBrightDisp = 3.0f, tElapBrightDisp = 0.0f;//
+LightGrid Main_LG( *LightArr, gridRows, gridCols );// 
+
 // a rotary encoder to use in levels and adjust brightness at main menu
 int pinEncoderCLK = 6, pinEncoderDT = 7, pinEncoderSW = 8;
 //int lastClkState = HIGH;
@@ -70,27 +78,35 @@ void setup()
   lastClkState = digitalRead(pinEncoderCLK);// initial value
   attachInterrupt(digitalPinToInterrupt(pinEncoderCLK), updateEncoder, CHANGE);
 
-  typeID = 'C';
+  // brightness display
+  IntegerSource::init_static();  
+  brightDisplay.setTarget( Main_LG );
+  brightDisplay.row0 = 2;
+  brightDisplay.col0 = 2;
+  brightDisplay.bgLt.setRGB( 20, 20, 20 );
+  brightDisplay.fgLt.setRGB( 200, 200, 200 );
+  brightDisplay.setValue( LEDbrightness );
+
+  currLevel = 0;
   ArduinoLevel::pCurrLvl = nullptr;
-  selectNewLevel();
-//  ArduinoLevel::pCurrLvl = startNewLevel();
-//  if( !ArduinoLevel::pCurrLvl )// Fail!!
   theOled.setupDisplay();
-  theOled.setTextColor( COLOR_WHITE );
-  theOled.clear();
-  theOled.printAt( 0, 0, "Begin...", 1 );
-  theOled.show();
-  selectNewLevel();
+  theOled.setTextColor( COLOR_WHITE );  
+  selectNewLevel();// show level menu
 
   FastLED.addLeds<WS2812, 8, GRB>(leds, numLEDs).setCorrection(TypicalLEDStrip);
-  FastLED.setBrightness( LEDbrightness );
-  
+  FastLED.setBrightness( LEDbrightness );  
 }
 
 void GenerateAndHandleEvents();
 uint32_t lastTime = micros();
 int lastRotEncoderValue = rotEncoderValue;// change event detection
 int rotEncoderDelta = 0;// = rotEncoderValue - lastRotEncoderValue
+// TEMP testing leds. Work around a bad lamp at leds + badIndex
+Light* pTestLt = leds + gridRows*gridCols - 296;
+// copy back leds by 1 from *pBadLamp to the end
+// pBadLamp assigned in SDinit()
+void FixAndTest();// assign -1 to just return
+
 void loop()
 {
     uint32_t currTime = micros();
@@ -104,8 +120,7 @@ void loop()
     // no use of callbacks. Events only
     actButt.update( dtLoop );//  act on menu selection
     menuButt.update( dtLoop );// scroll through a menu here and in level
-    // update slidePots
-    // update rotary encoder and save delta for event.value
+    // update slidePots    
     // reset brightness?
     pushButtEncSW.update( dtLoop );// no event yet
     if( pushButtEncSW.pollEvent() == 1 )// press event
@@ -113,6 +128,7 @@ void loop()
       rotEncoderValue = 0;// double the brightness value
     }
 
+    // update rotary encoder and save delta for event.value
     rotEncoderDelta = 0;
     if( lastRotEncoderValue != rotEncoderValue )// encoder changed
     {
@@ -126,19 +142,28 @@ void loop()
     // update the level
     if( ArduinoLevel::pCurrLvl )
     {
-        ArduinoLevel::update_stat(dtLoop);
-        ArduinoLevel::draw_stat();
+      ArduinoLevel::update_stat(dtLoop);
+      ArduinoLevel::draw_stat();
     }
     else// draw an "at menu" image
     {
         for( int n = 0; n < gridRows*gridCols; ++n )
-          LightArr[n] =  Light(60,0,100);// Menu color
+          LightArr[n] =  Light(0,40,0);// Menu color
+    }
+
+    // the bright display
+    if( tElapBrightDisp < tBrightDisp )
+    {
+      tElapBrightDisp += dtLoop;
+      brightDisplay.draw();
     }
 
     // write to leds
     FastLED.clear();
     for( unsigned int p = 0; p < numPanels; ++p )
       panel[p].update();
+
+    FixAndTest();
 
     FastLED.show();
 
@@ -149,6 +174,42 @@ void loop()
       theOled.clear();
       theOled.printAt( 0, 0, OledString.c_str(), 1 );
       theOled.show();
+    }
+}
+
+// copy back leds by 1 from badIndex to the end
+Light* pBadLamp = nullptr;
+void FixAndTest()
+{
+    // the test
+    if( !ArduinoLevel::pCurrLvl )// at home only
+    {
+      for( int n = 0; n < 16; ++n )// 2 x 8 columns
+      {
+        Light* pLt = pTestLt + n;// global pTestLt is varied using rotary encoder
+        if( pLt < leds ) 
+          pLt = leds;// 1st element
+        else if( pLt >= leds + gridRows*gridCols ) 
+          pLt = leds + gridRows*gridCols - 1;// last element
+        // write
+        pLt->setRGB( 16*n, 0, 255 - 16*n );
+      }
+    }
+
+    // the fix?
+    if( pBadLamp )
+    {
+      int numLts = gridRows*gridCols;
+      // bound check
+      if( pBadLamp < leds || pBadLamp >= leds + numLts )
+        return;
+      // fix it
+      Light* copyIter = pBadLamp;
+      while( copyIter + 1 < leds + numLts )
+      {
+        *copyIter = copyIter[1];
+        ++copyIter;
+      }
     }
 }
 
@@ -168,6 +229,8 @@ void updateEncoder()// callback for interrupt
   lastClkState = currentClkState;
 }
 
+// TEMP testing leds
+bool menuButtPressed = false;
 // an event system
 const int maxEvents = 6;
 ArduinoEvent ArdEvent[ maxEvents ];
@@ -190,6 +253,7 @@ void GenerateAndHandleEvents()
     else if( menuButt.pollEvent() )
     {
         AE.type = menuButt.pollEvent();// type: pressed: 1, released: -1
+        AE.type *= -1;// cap touch button. operation reversed
         AE.ID = menuButtID;// select next menu option
     }
     // add for rotary encoder (for value delta): add event type = 2
@@ -212,6 +276,17 @@ void GenerateAndHandleEvents()
     for( int n = 0; n < EventCount; ++n )
     {
         ArduinoEvent& AE = ArdEvent[n];
+        // special case: toggle menuButtPressed
+        if( AE.ID == menuButtID )
+        {
+          if( AE.type == 1 ) menuButtPressed = true;
+          else if( AE.type == -1 ) menuButtPressed = false;
+        }
+
+        // "consume" an event meant just to adjust brightness
+        if( menuButtPressed && AE.type == 2 )// rotary encoder
+          continue;// do not pass on to level
+
         // to the level
         if( ArduinoLevel::pCurrLvl )
         {
@@ -221,6 +296,7 @@ void GenerateAndHandleEvents()
                 ArduinoLevel::pCurrLvl = nullptr;
                 EventCount = 0;
                 // back to the main menu
+                currLevel = 0;
                 selectNewLevel();
                 break;
             }
@@ -232,13 +308,7 @@ void GenerateAndHandleEvents()
             {
                 if( AE.ID == menuButtID )// cycle options
                 {
-                    if( typeID == 'A' )// it is A
-                        typeID = 'B';// make it B
-                    else if( typeID == 'B' )// it is B
-                        typeID = 'C';// make it C
-                    else// it is C
-                        typeID = 'A';// make it A
-
+                    currLevel = ( 1 + currLevel )%numLevels;
                     selectNewLevel();
                 }
             }// load on  release so release does not happen in the level (option 1 is acted on)
@@ -253,36 +323,48 @@ void GenerateAndHandleEvents()
             }
             else if( AE.type == 2 )// rotary encoder event
             {
-              LEDbrightness += rotEncoderDelta;
-              if( LEDbrightness < 0 ) LEDbrightness = 0;
-              else if( LEDbrightness > 255 ) LEDbrightness = 255;
-              FastLED.setBrightness( LEDbrightness );
+              if( AE.ID == 1 )
+              {
+                // TEMP
+                if( !menuButtPressed )
+                {
+                  pTestLt += rotEncoderDelta;
+                }
+              }
             }
         }
     }
     // all parsed out
     EventCount = 0;
+
+    // adjust brightness if menuButt presses and rotEncoderDelta != 0
+    if( menuButtPressed && rotEncoderDelta != 0 )
+    {
+      LEDbrightness += rotEncoderDelta;
+      if( LEDbrightness < 0 ) LEDbrightness = 0;
+      else if( LEDbrightness > 255 ) LEDbrightness = 255;
+      FastLED.setBrightness( LEDbrightness );
+      // brightness display
+      tElapBrightDisp = 0.0f;
+      brightDisplay.setValue( LEDbrightness );
+    }
 }
 
 void selectNewLevel()// callback for pushButtB
 {
   if( ArduinoLevel::pCurrLvl ) return;// in use by Level
 
-   // alternate
-//  if( typeID == 'A' )// it is A
-//      typeID = 'B';// make it B
-//  else if( typeID == 'B' )// it is B
-//      typeID = 'C';// make it C
- // else// it is C
- //     typeID = 'A';// make it A
-
-  String str("Select Level");
-  str += typeID == 'A' ? "\n* " : "\n  ";
-  str += "Level A";
-  str += typeID == 'B' ? "\n* " : "\n  ";
-  str += "Level B";
-  str += typeID == 'C' ? "\n* " : "\n  ";
+  String str("** Select Level **");
+  str += currLevel == 0 ? "\n* " : "\n  ";
+  str += "Gallery Viewer";
+  str += currLevel == 1 ? "\n* " : "\n  ";
+  str += "Wave Player";
+  str += currLevel == 2 ? "\n* " : "\n  ";
   str += "Scroll Frames";
+  str += currLevel == 3 ? "\n* " : "\n  ";
+  str += "WavePlay Blend";
+  str += currLevel == 4 ? "\n* " : "\n  ";
+  str += "Random Rings";
 
   theOled.clear();
   theOled.printAt( 0, 0, str.c_str(), 1 );
@@ -294,37 +376,33 @@ ArduinoLevel* startNewLevel()
     if( ArduinoLevel::pCurrLvl ) delete ArduinoLevel::pCurrLvl;
     ArduinoLevel::pCurrLvl = nullptr;
 
-//  theOled.clear();
- // OledString = "new level type: ";
- // OledString += typeID;
- // theOled.printAt( 0, 0, OledString.c_str(), 1 );
- // theOled.show();
-
-    switch( typeID )
+    switch( currLevel )
     {
-        case 'A' :
+        case 0 :
         {
-            AL_BasicA* pALB_A = new AL_BasicA;
+            AL_GalleryViewer* pAL_GV = new AL_GalleryViewer;
             // do type specific setup here
-            pALB_A->bindToGrid( LightArr, gridRows, gridCols );
-            pALB_A->setup( &theOled );
-            // assign static master pointer
-            ArduinoLevel::pCurrLvl = pALB_A;
+            pAL_GV->bindToGrid( LightArr, gridRows, gridCols );
+            if( pAL_GV->setup( ALGV_fileName.c_str(), &theOled ) )            
+              ArduinoLevel::pCurrLvl = pAL_GV;
+            else
+              ArduinoLevel::pCurrLvl = nullptr;// Fail!
         }
         break;
 
-        case 'B' :
+        case 1 :
         {
-            AL_BasicB* pALB_B = new AL_BasicB;
+            AL_WavePlayers* pAL_WP = new AL_WavePlayers;
             // do type specific setup here
-            pALB_B->bindToGrid( LightArr, gridRows, gridCols );
-            pALB_B->setup( &theOled );
-            // assign static master pointer
-            ArduinoLevel::pCurrLvl = pALB_B;
+            pAL_WP->bindToGrid( LightArr, gridRows, gridCols );
+            if( pAL_WP->setup( &theOled ) )
+              ArduinoLevel::pCurrLvl = pAL_WP;
+            else
+              ArduinoLevel::pCurrLvl = nullptr;// Fail!
         }
         break;
 
-        case 'C' :
+        case 2 :
         {
             ArdLvlScrolling* pALS = new ArdLvlScrolling;
             // do type specific setup here
@@ -336,6 +414,32 @@ ArduinoLevel* startNewLevel()
               pALS->AniBuff_Src.pSrcBuff[n].RotateCW();
             // assign static master pointer
             ArduinoLevel::pCurrLvl = pALS;
+        }
+        break;
+
+        case 3 :
+        {
+            AL_WavePlayBlending* pWPB = new AL_WavePlayBlending;
+            // do type specific setup here
+            pWPB->clearLt = clearLt;
+            pWPB->bindToGrid( LightArr, gridRows, gridCols );
+            if( pWPB->setup( WPB_fileName.c_str(), &theOled ) )           
+              ArduinoLevel::pCurrLvl = pWPB;
+            else
+              ArduinoLevel::pCurrLvl = nullptr;// Fail!
+        }
+        break;
+
+        case 4 :
+        {
+            AL_RandomRings* pRR = new AL_RandomRings;
+            // do type specific setup here
+            pRR->clearLt.setRGB(0,0,0);// black
+            pRR->bindToGrid( LightArr, gridRows, gridCols );
+            if( pRR->setup( &theOled ) )
+              ArduinoLevel::pCurrLvl = pRR;
+            else
+              ArduinoLevel::pCurrLvl = nullptr;// Fail!
         }
         break;
 
@@ -382,6 +486,15 @@ bool init_SD()
   String mainFileName = "/SourcePlayers/SD_initLevels.txt";
   FileParser FP( mainFileName.c_str() );
   FP >> ALS_fileName;
+  FP >> ALGV_fileName;
+  FP >> WPB_fileName;
+  // bad lamp fix
+  int badIndex = 0;
+  FP >> badIndex;
+  if( badIndex >=0 && badIndex < gridRows*gridCols )
+    pBadLamp = leds + badIndex;
+  else
+    pBadLamp = nullptr;
 
   return true;
 }
