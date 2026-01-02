@@ -177,61 +177,7 @@ bool AL_WavePlayBlending::update( float dt )
 
 bool AL_WavePlayBlending::handleEvent( ArduinoEvent& rEvent )
 {
-    // handle Quit up front
-    if( rEvent.type == -1 && (rEvent.ID == actButtID) && (menuIter == numOptions - 1) )
-        return false;// Quit
-
-    // return will be true from here
-    if( rEvent.type == 1 )// button press
-    {
-        if( rEvent.ID == actButtID )
-        {
-            if( menuIter == 2 )// adjust timeScale
-            {
-              timeScale *= -1.0f;// toggle sign to reverse motion
-              updateDisplay();
-            }
-        }
-        else if( rEvent.ID == menuButtID )// menu scroll button
-        {
-            menuIter = ( 1 + menuIter )%numOptions;
-            updateDisplay();
-        }
-    }
-    else if( rEvent.type == -1 )// button release
-    {
-        if( rEvent.ID == actButtID )// act
-        {
-            if( menuIter == 0 )
-            {
-          //      tFrame = 1.0f;
-            }
-        }
-    }
-    else if( rEvent.type == 2 && rEvent.ID == rotEncID )// rotary encoder
-    {
-        if( menuIter == 0 )
-        {
-          tPeriodWP  += rotEncScale*rEvent.value;
-          if( tPeriodWP < 1.0f ) tPeriodWP = 1.0f;
-        }
-        else if( menuIter == 1 )
-        {
-            tTransWP  += rotEncScale*rEvent.value;
-            if( tTransWP < 1.0f ) tTransWP = 1.0f;
-        }
-        else if( menuIter == 2 )
-        {
-            timeScale  += 0.05f*rEvent.value;
-            // clamp value. timeScale can be < 0
-            if( timeScale >= 0.0f && timeScale < 0.2f ) timeScale = 0.2f;
-            else if( timeScale < 0.0f && timeScale > -0.2f ) timeScale = -0.2f;
-        }
-
-        updateDisplay();
-    }
-
-    return true;
+    return handleEvent0( rEvent );
 }
 
 void AL_WavePlayBlending::draw()const
@@ -254,6 +200,8 @@ void AL_WavePlayBlending::updateDisplay()const
     msg += ( menuIter == 2 ) ? "\n* " : "\n  ";
     msg += "timeScale: ";
     msg += timeScale;
+    msg += ( menuIter == 3 ) ? "\n* " : "\n  ";
+    msg += "Random Next ";
     // Quit
     msg += ( menuIter == numOptions - 1 ) ? "\n* " : "\n  ";
     msg += "QUIT to menu";
@@ -267,4 +215,108 @@ void AL_WavePlayBlending::updateDisplay()const
     pDisplay->clear();
     pDisplay->printAt( 0, 0, msg.c_str(), 1 );
     pDisplay->show();
+}
+
+bool AL_WavePlayBlending::handleEvent0( ArduinoEvent AE )
+{
+  // handle Quit up front
+    if( AE.type == -1 && ( AE.ID == actButtID ) && ( menuIter == numOptions - 1 ) )
+        return false;// Quit
+
+  // either button released
+  if( AE.type == -1 ) return true;// no use this page
+  // actButt press is only for menuIter = 2
+
+  // handle menu scroll
+  if( AE.type == 1 && ( AE.ID == menuButtID ) )  
+    menuIter = ( 1 + menuIter )%numOptions;  
+
+    String msg( "WavePlayer" );
+    
+    msg += ( menuIter == 0 ) ? "\n* " : "\n  ";
+    msg += "tPeriodWP: ";
+    if( menuIter == 0 && AE.type == 2 && AE.ID == rotEncID )
+    {
+      tPeriodWP  += rotEncScale*AE.value;
+      if( tPeriodWP < 1.0f ) tPeriodWP = 1.0f;
+    }
+    msg += tPeriodWP;
+
+    msg += ( menuIter == 1 ) ? "\n* " : "\n  ";
+    msg += "tTransWP: ";
+    if( menuIter == 1 && AE.type == 2 && AE.ID == rotEncID )
+    {
+      tTransWP  += rotEncScale*AE.value;
+      if( tTransWP < 1.0f ) tTransWP = 1.0f;
+    }
+    msg += tTransWP;
+
+    msg += ( menuIter == 2 ) ? "\n* " : "\n  ";
+    msg += "timeScale: ";
+    if( menuIter == 2 )
+    {
+      if( AE.type == 2 && AE.ID == rotEncID )
+      {
+         timeScale  += 0.05f*AE.value;
+        // clamp value. timeScale can be < 0
+        if( timeScale >= 0.0f && timeScale < 0.2f ) timeScale = 0.2f;
+        else if( timeScale < 0.0f && timeScale > -0.2f ) timeScale = -0.2f;
+      }
+      else if( AE.type == 1 && AE.ID == actButtID )
+      {
+          timeScale *= -1.0f;// toggle sign to reverse motion
+      }
+    }
+    msg += timeScale;
+
+    msg += ( menuIter == 3 ) ? "\n* " : "\n  ";
+    msg += "Random Next ";
+    if( menuIter == 3 && AE.type == 1 && AE.ID == actButtID )
+    {
+      randomNext();
+      tElapWP = tPeriodWP;// start fade
+    }
+
+    // Quit
+    msg += ( menuIter == numOptions - 1 ) ? "\n* " : "\n  ";
+    msg += "QUIT to menu";
+    // updated once per second automatically
+    msg += "\nUpTime: ";
+    msg += updateTime;
+    if( (tElapWP > tPeriodWP) && (tElapWP < tPeriodWP + tTransWP) )// blending
+      msg += "\n  BLENDING";
+
+    // write
+    if( !pDisplay ) return true;// crash avoidance, but not a Quit
+    pDisplay->clear();
+    pDisplay->printAt( 0, 0, msg.c_str(), 1 );
+    pDisplay->show();
+
+  return true;
+}
+
+void AL_WavePlayBlending::randomNext()const
+{
+  int nextWP = ( 1 + currWP )%numWP;// roll index
+  wvPlay[ nextWP ].AmpRt = 0.01f*( rand()%101 );
+  wvPlay[ nextWP ].AmpLt = 1.0f - wvPlay[ nextWP ].AmpRt;
+
+  wvPlay[ nextWP ].wvLenLt = 100.0f + 2.0f*(rand()%101 );
+  wvPlay[ nextWP ].wvLenRt = 100.0f + 2.0f*(rand()%101);
+  wvPlay[ nextWP ].wvSpdLt = 100.0f + 1.0f*(rand()%101);
+  wvPlay[ nextWP ].wvSpdRt = wvPlay[ nextWP ].wvSpdLt;
+  wvPlay[ nextWP ].periodLt = wvPlay[ nextWP ].wvLenLt/wvPlay[ nextWP ].wvSpdLt;
+  wvPlay[ nextWP ].periodRt = wvPlay[ nextWP ].wvLenRt/wvPlay[ nextWP ].wvSpdRt;
+  wvPlay[ nextWP ].tElapLt = wvPlay[ nextWP ].tElapRt = 0.0f;
+  // colors
+  wvPlay[ nextWP ].frHi = rand()%256;
+  wvPlay[ nextWP ].fgHi = rand()%256;
+  wvPlay[ nextWP ].fbHi = rand()%256;
+  
+  wvPlay[ nextWP ].frLo = 255 - wvPlay[ nextWP ].frHi;
+  wvPlay[ nextWP ].fgLo = 255 - wvPlay[ nextWP ].fgHi;
+  wvPlay[ nextWP ].fbLo = 255 - wvPlay[ nextWP ].fbHi;
+  // coefficients
+  wvPlay[ nextWP ].nTermsLt = wvPlay[ nextWP ].nTermsRt = 0;
+  wvPlay[ nextWP ].C_Lt = wvPlay[ nextWP ].C_Rt = nullptr;
 }

@@ -40,18 +40,21 @@ class AL_WavePlayBlending : public ArduinoLevel
     int rotEncID = 1;
     float rotEncScale = 0.5f;
     float timeScale = 1.0f;
-    int numOptions = 4;// Adjust tPeriodWP, tTransWP, timeScale and Quit
+    int numOptions = 5;// Adjust tPeriodWP, tTransWP, timeScale, randomize next and Quit
     int menuIter = 0;
     SSD1306_Display* pDisplay = nullptr;
     void updateDisplay()const;
      // timed update for Home page
     int updateTime = 0;
     float tElapUp = 0.0f;// 1.0f limit in update()
+    void randomNext()const;
 
     bool setup( const char* setupFilename, SSD1306_Display* p_Display );
     virtual bool update( float dt );
     virtual void draw()const;
     virtual bool handleEvent( ArduinoEvent& rEvent );
+    // trying new central treatment
+    bool handleEvent0( ArduinoEvent AE );
 
     AL_WavePlayBlending(){}
     virtual ~AL_WavePlayBlending()
