@@ -9,6 +9,7 @@
 
 #include "FloatLine.h"
 #include "IntegerLine.h"
+#include "MenuPage.h"
 
 class AL_RandomRings : public ArduinoLevel
 {
@@ -30,19 +31,22 @@ class AL_RandomRings : public ArduinoLevel
     // vary these numbers
     // 4x float
     float fadeRratio = 1.6f;
-    FloatLine fl_fadeRratio;
+ //   FloatLine fl_fadeRratio;
     float fadeWratio = 1.6f;
-    FloatLine fl_fadeWratio;
+//    FloatLine fl_fadeWratio;
     float spawnTime = 0.5f;// average rate of 2 per second
-    FloatLine fl_spawnTime;
+ //   FloatLine fl_spawnTime;
     float speedFactor = 1.0f;// modulates randomly assigned value
-    FloatLine fl_speedFactor;
+ //   FloatLine fl_speedFactor;
     // 1x int
     int spawnBound = 48;
-    IntegerLine IL_spawnBound;
+ //   IntegerLine IL_spawnBound;
     // 1x action: Light a test lamp when actButt held and this line selected
     bool doTestLamp = false;// to test MenuLine
-    MenuLine ML_testLamp;
+ //   MenuLine ML_testLamp;
+
+    // they go on a menu
+    MenuPage thePage;
 
     // for use with menu
  //   int actButtId = 1;// inherited

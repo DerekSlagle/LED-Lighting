@@ -15,7 +15,7 @@ class MenuLine
 {
     public:
     int* pMenuIter = nullptr;
-    int myIterVal = 0;// which line in menu
+  //  int myIterVal = 0;// which line in menu
     String label;
     MenuLine* pNextLine = nullptr;
 
@@ -24,32 +24,33 @@ class MenuLine
     bool actButtPressed = false;//  to other events (eg type=2 in derived)
     bool* pDoAct = nullptr;// so user can follow through with code execution if any
 
-    void setupBase( int& MenuIter, int myIterValue, const char* Label )
+    //void setupBase( int& MenuIter, int myIterValue, const char* Label )
+    void setupBase( int& MenuIter, const char* Label )
     {
         pMenuIter = &MenuIter;
-        myIterVal = myIterValue;
+     //   myIterVal = myIterValue;
         label = Label;
     }
 
     // each derived defines a setup procedure
-    virtual String draw()const
+    virtual String draw( int LineNum = 0 )const
     {
         String retVal;
         if( !( pMenuIter ) ) return retVal;// empty        
-        retVal = ( *pMenuIter == myIterVal ) ? "\n* " : "\n  ";
+        retVal = ( *pMenuIter == LineNum ) ? "\n* " : "\n  ";
         retVal += label;
         if( pDoAct ) retVal += *pDoAct ? " ON" : " OFF";
 
         // append remaining lines
-        if( pNextLine ) retVal += pNextLine->draw();
+        if( pNextLine ) retVal += pNextLine->draw( LineNum + 1 );
         return retVal;
     }
 
-    bool handleActButtEvent( ArduinoEvent AE )
+    bool handleActButtEvent( ArduinoEvent AE, int LineNum = 0 )
     {
         if( !pMenuIter ) return false;
 
-        if( *pMenuIter == myIterVal )
+        if( *pMenuIter == LineNum )
         {            
             if( AE.ID == actButtID )
             {
@@ -74,20 +75,20 @@ class MenuLine
         return false;
     }
 
-    virtual bool handleEvent( ArduinoEvent AE )
+    virtual bool handleEvent( ArduinoEvent AE, int LineNum = 0 )
     {
         if( !pMenuIter ) return false;
 
-        if( handleActButtEvent( AE ) )
+        if( handleActButtEvent( AE, LineNum ) )
         {       
             return true;
         }
         else if( pNextLine )
         {
-            return pNextLine->handleEvent( AE );
+            return pNextLine->handleEvent( AE, LineNum + 1 );
         }
 
-        return false;
+        return true;
     }
 
     MenuLine(){}

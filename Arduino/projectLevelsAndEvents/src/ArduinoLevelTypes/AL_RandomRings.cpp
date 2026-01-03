@@ -16,34 +16,51 @@ bool AL_RandomRings::setup( SSD1306_Display* p_Display )
     ringPlay_Arr[n].initToGrid( Target_LG.pLt0, Target_LG.rows, Target_LG.cols );
 
     // menu lines
+    /*
     // line 0
-    fl_fadeRratio.setupBase( menuIter, 0, "fadeRratio: " ) ;
+    fl_fadeRratio.setupBase( menuIter, "fadeRratio: " ) ;
     fl_fadeRratio.setupFloat( fadeRratio, 0.2f, 5.0f );
     fl_fadeRratio.inScale = 0.05f;
     fl_fadeRratio.pNextLine = &fl_fadeWratio;
     // line 1  fadeWratio
-    fl_fadeWratio.setupBase( menuIter, 1, "fadeWratio: " ) ;
+    fl_fadeWratio.setupBase( menuIter, "fadeWratio: " ) ;
     fl_fadeWratio.setupFloat( fadeWratio, 0.2f, 5.0f );
     fl_fadeWratio.inScale = 0.05f;
     fl_fadeWratio.pNextLine = &fl_spawnTime;
     // line 2  spawnTime
-    fl_spawnTime.setupBase( menuIter, 2, "spawnTime: " ) ;
+    fl_spawnTime.setupBase( menuIter, "spawnTime: " ) ;
     fl_spawnTime.setupFloat( spawnTime, 0.1f, 5.0f );
     fl_spawnTime.inScale = 0.05f;
     fl_spawnTime.pNextLine = &fl_speedFactor;
     // line 3  speedFactor
-    fl_speedFactor.setupBase( menuIter, 3, "speedFactor: " ) ;
+    fl_speedFactor.setupBase( menuIter, "speedFactor: " ) ;
     fl_speedFactor.setupFloat( speedFactor, 0.1f, 5.0f );
     fl_speedFactor.inScale = 0.01f;
     fl_speedFactor.pNextLine = &IL_spawnBound;// to IntLine when it exists
     // line 4 int spawnBound
-    IL_spawnBound.setupBase( menuIter, 4, "spawnBound: " ) ;
+    IL_spawnBound.setupBase( menuIter, "spawnBound: " ) ;
     IL_spawnBound.setupInt( spawnBound, 8, 60 );
     IL_spawnBound.pNextLine = &ML_testLamp;
     // line 5 test lamp
-    ML_testLamp.setupBase( menuIter, 5, "Test Lamp: " ) ;
+    ML_testLamp.setupBase( menuIter, "Test Lamp: " ) ;
     ML_testLamp.pDoAct = &doTestLamp;
     ML_testLamp.pNextLine = nullptr;
+    */
+
+    // all in 1 menu page
+    thePage.setup( " ** Random Rings **", 6 );
+    // line 0: float fadeRratio
+    thePage.addFloatLine( "fadeRratio: ", fadeRratio, 0.2f, 5.0f, 0.05f, nullptr );
+    // line 1: float fadeWratio
+    thePage.addFloatLine( "fadeWratio: ", fadeWratio, 0.2f, 5.0f, 0.05f, nullptr );
+    // line 2: float spawnTime
+    thePage.addFloatLine( "spawnTime: ", spawnTime, 0.1f, 5.0f, 0.05f, nullptr );
+    // line 3: float speedFactor
+    thePage.addFloatLine( "speedFactor: ", speedFactor, 0.1f, 5.0f, 0.01f, nullptr );
+    // line 4: int spawnBound
+    thePage.addIntegerLine( "spawnBound: ", spawnBound, 8, 60, nullptr );
+    // line 5: base type
+    thePage.addBaseLine( "Test Lamp: ", &doTestLamp );
 
     // new for display
     pDisplay = p_Display;
@@ -140,22 +157,23 @@ void AL_RandomRings::draw()const
 bool AL_RandomRings::handleEvent( ArduinoEvent& AE )// change window position
 {
     // handle Quit up front
-    if( AE.type == -1 && (AE.ID == actButtID) &&  (menuIter == numOptions - 1) )
-        return false;// Quit
+ //   if( AE.type == -1 && (AE.ID == actButtID) &&  (menuIter == numOptions - 1) )
+ //       return false;// Quit
 
     // handle menu scroll
-    if( AE.type == 1 && AE.ID == menuButtID )
-    {
-        menuIter = ( 1 + menuIter )%numOptions;
-        updateDisplay();
-        return true;
-    }
+  //  if( AE.type == 1 && AE.ID == menuButtID )
+  //  {
+  //      menuIter = ( 1 + menuIter )%numOptions;
+  //      updateDisplay();
+  //      return true;
+ //   }
 
-    if( fl_fadeRratio.handleEvent( AE ) )
+    if( thePage.handleEvent( AE ) )
     {
         updateDisplay();
         return true;
     }
+    else return false;
     
     return true;
 }
@@ -163,12 +181,13 @@ bool AL_RandomRings::handleEvent( ArduinoEvent& AE )// change window position
 void AL_RandomRings::updateDisplay()const
 {
     if( !pDisplay ) return;// crash avoidance
-    String msg( " ** Random Rings **" );
-    msg += fl_fadeRratio.draw();// 5 lines in 1
+  //  String msg( " ** Random Rings **" );
+    String msg = thePage.draw();// 5 lines in 1
 
     // Quit
-    msg += ( menuIter == numOptions - 1 ) ? "\n *" : "\n  ";
-    msg += "QUIT to menu";
+  //  msg += ( menuIter == numOptions - 1 ) ? "\n *" : "\n  ";
+ //   msg += "QUIT to menu";
+
     // extra line updates once per second
     msg += "\nRings: ";
     msg += numRPplaying;

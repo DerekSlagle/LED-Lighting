@@ -23,26 +23,26 @@ class FloatLine : public MenuLine
     float maxVal = 1.0f;
     float iVal = 0;// initial value
 
-    virtual String draw()const// a toString()
+    virtual String draw( int LineNum = 0 )const// a toString()
     {
         String retVal;
         if( !( pMenuIter && pfVal ) ) return retVal;// empty
-        retVal = ( *pMenuIter == myIterVal ) ? "\n* " : "\n  ";
+        retVal = ( *pMenuIter == LineNum ) ? "\n* " : "\n  ";
         retVal += label;
         retVal += *pfVal;
         // append remaining lines
-        if( pNextLine ) retVal += pNextLine->draw();
+        if( pNextLine ) retVal += pNextLine->draw( LineNum + 1 );
 
         return retVal;
     }
 
-    virtual bool handleEvent( ArduinoEvent AE )
+    virtual bool handleEvent( ArduinoEvent AE, int LineNum = 0 )
     {
         if( !( pMenuIter && pfVal ) ) return false;
 
-        if( *pMenuIter == myIterVal )
+        if( *pMenuIter == LineNum )
         {
-            if( handleActButtEvent( AE ) ) return true;// it was an actButt event
+            if( handleActButtEvent( AE, LineNum ) ) return true;// it was an actButt event
 
             if( AE.type == 2 && AE.ID == rotEncID )
             {
@@ -60,10 +60,10 @@ class FloatLine : public MenuLine
         }
         else if( pNextLine )
         {
-            return pNextLine->handleEvent( AE );
+            return pNextLine->handleEvent( AE, LineNum + 1 );
         }
 
-        return false;
+        return true;
     }
 
     

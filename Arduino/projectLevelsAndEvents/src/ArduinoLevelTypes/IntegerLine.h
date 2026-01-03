@@ -18,26 +18,26 @@ class IntegerLine : public MenuLine
    
 
     // each derived defines a setup procedure
-    virtual String draw()const
+    virtual String draw( int LineNum = 0 )const
     {
         String retVal;
         if( !( pMenuIter && piVal ) ) return retVal;// empty        
-        retVal = ( *pMenuIter == myIterVal ) ? "\n* " : "\n  ";
+        retVal = ( *pMenuIter == LineNum ) ? "\n* " : "\n  ";
         retVal += label;
         retVal += *piVal;// pointer to int
         // append remaining lines
-        if( pNextLine ) retVal += pNextLine->draw();
+        if( pNextLine ) retVal += pNextLine->draw( LineNum + 1 );
 
         return retVal;
     }
 
-    virtual bool handleEvent( ArduinoEvent AE )
+    virtual bool handleEvent( ArduinoEvent AE, int LineNum = 0 )
     {
         if( !( pMenuIter && piVal ) ) return false;
 
-        if( *pMenuIter == myIterVal )
+        if( *pMenuIter == LineNum )
         {
-            if( handleActButtEvent( AE ) ) return true;// it was an actButt event
+            if( handleActButtEvent( AE, LineNum ) ) return true;// it was an actButt event
 
             if( AE.type == 2 && AE.ID == rotEncID )
             {
@@ -55,15 +55,13 @@ class IntegerLine : public MenuLine
                 *piVal = iVal;
                 return true;
             }
-
-            return false;
         }
         else if( pNextLine )
         {
-            return pNextLine->handleEvent( AE );
+            return pNextLine->handleEvent( AE, LineNum + 1 );
         }
 
-        return false;
+        return true;
     }
 
     void setupInt( int& Value, int MinVal, int MaxVal )
