@@ -14,7 +14,7 @@
 class MenuLine
 {
     public:
-    int* pMenuIter = nullptr;
+    // int* pMenuIter = nullptr;// dep
   //  int myIterVal = 0;// which line in menu
     String label;
     MenuLine* pNextLine = nullptr;
@@ -25,70 +25,52 @@ class MenuLine
     bool* pDoAct = nullptr;// so user can follow through with code execution if any
 
     //void setupBase( int& MenuIter, int myIterValue, const char* Label )
-    void setupBase( int& MenuIter, const char* Label )
+ //   void setupBase( int& MenuIter, const char* Label )// OLD
+    void setupBase( const char* Label, bool* p_DoAct = nullptr )// NEW
     {
-        pMenuIter = &MenuIter;
+     //   pMenuIter = &MenuIter;
      //   myIterVal = myIterValue;
         label = Label;
+        pDoAct = p_DoAct;
     }
 
     // each derived defines a setup procedure
-    virtual String draw( int LineNum = 0 )const
+ //   virtual String draw( int LineNum = 0 )const// OLD
+    virtual String draw()const// NEW
     {
-        String retVal;
-        if( !( pMenuIter ) ) return retVal;// empty        
-        retVal = ( *pMenuIter == LineNum ) ? "\n* " : "\n  ";
-        retVal += label;
+        String retVal = label;
         if( pDoAct ) retVal += *pDoAct ? " ON" : " OFF";
 
-        // append remaining lines
-        if( pNextLine ) retVal += pNextLine->draw( LineNum + 1 );
         return retVal;
     }
 
-    bool handleActButtEvent( ArduinoEvent AE, int LineNum = 0 )
+   // bool handleActButtEvent( ArduinoEvent AE, int LineNum = 0 )// OLD
+    bool handleActButtEvent( ArduinoEvent AE )//NEW
     {
-        if( !pMenuIter ) return false;
-
-        if( *pMenuIter == LineNum )
-        {            
-            if( AE.ID == actButtID )
+        if( AE.ID == actButtID )
+        {
+            if( AE.type == 1 )// press
             {
-                if( AE.type == 1 )// press
-                {
-                    actButtPressed = true;
-                    if( pDoAct ) *pDoAct = true;
-                }
-                else if( AE.type == -1 )// release
-                {
-                    actButtPressed = false;
-                    if( pDoAct ) *pDoAct = false;
-                }
-                else return false;
-
+                actButtPressed = true;
+                if( pDoAct ) *pDoAct = true;
                 return true;
             }
 
-            return false;
+            if( AE.type == -1 )// release
+            {
+                actButtPressed = false;
+                if( pDoAct ) *pDoAct = false;
+                return true;
+            }            
         }
 
         return false;
     }
 
-    virtual bool handleEvent( ArduinoEvent AE, int LineNum = 0 )
+ //   virtual bool handleEvent( ArduinoEvent AE, int LineNum = 0 )// OLD
+    virtual bool handleEvent( ArduinoEvent AE )// NEW
     {
-        if( !pMenuIter ) return false;
-
-        if( handleActButtEvent( AE, LineNum ) )
-        {       
-            return true;
-        }
-        else if( pNextLine )
-        {
-            return pNextLine->handleEvent( AE, LineNum + 1 );
-        }
-
-        return true;
+        return handleActButtEvent( AE );// NEW This is only event handled by the base line type 
     }
 
     MenuLine(){}

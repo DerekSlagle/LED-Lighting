@@ -18,56 +18,45 @@ class IntegerLine : public MenuLine
    
 
     // each derived defines a setup procedure
-    virtual String draw( int LineNum = 0 )const
+    virtual String draw()const
     {
-        String retVal;
-        if( !( pMenuIter && piVal ) ) return retVal;// empty        
-        retVal = ( *pMenuIter == LineNum ) ? "\n* " : "\n  ";
-        retVal += label;
-        retVal += *piVal;// pointer to int
-        // append remaining lines
-        if( pNextLine ) retVal += pNextLine->draw( LineNum + 1 );
+        String retVal = label;
+        if( piVal ) retVal += *piVal;
+        else retVal += "NULL";
 
+        if( pDoAct ) retVal += *pDoAct ? " ON" : " OFF";       
         return retVal;
     }
 
-    virtual bool handleEvent( ArduinoEvent AE, int LineNum = 0 )
+    virtual bool handleEvent( ArduinoEvent AE )
     {
-        if( !( pMenuIter && piVal ) ) return false;
+        if( !piVal ) return false;// NEW        
+        if( handleActButtEvent( AE ) ) return true;// it was an actButt event
 
-        if( *pMenuIter == LineNum )
+        if( AE.type == 2 && AE.ID == rotEncID )
         {
-            if( handleActButtEvent( AE, LineNum ) ) return true;// it was an actButt event
+            int incAmount = actButtPressed ? inBoost : 1;
+            if( AE.value > 0 ) *piVal += incAmount;
+            else *piVal -= incAmount;
 
-            if( AE.type == 2 && AE.ID == rotEncID )
-            {
-                int incAmount = actButtPressed ? inBoost : 1;
-                if( AE.value > 0 ) *piVal += incAmount;
-                else *piVal -= incAmount;
-
-                if( *piVal < minVal ) *piVal = minVal;
-                else if( *piVal > maxVal ) *piVal = maxVal;
-                return true;
-            }
-            // handle other event types
-            else if( AE.type == 1 && AE.ID == rotEncButtID )
-            {
-                *piVal = iVal;
-                return true;
-            }
+            if( *piVal < minVal ) *piVal = minVal;
+            else if( *piVal > maxVal ) *piVal = maxVal;
+            return true;
         }
-        else if( pNextLine )
+        // handle other event types
+        else if( AE.type == 1 && AE.ID == rotEncButtID )
         {
-            return pNextLine->handleEvent( AE, LineNum + 1 );
+            *piVal = iVal;
+            return true;
         }
 
-        return true;
+        return false; 
     }
 
     void setupInt( int& Value, int MinVal, int MaxVal )
     {
         piVal = &Value;
-        iVal = *piVal;
+        iVal = Value;
         minVal = MinVal;
         maxVal = MaxVal;
     }

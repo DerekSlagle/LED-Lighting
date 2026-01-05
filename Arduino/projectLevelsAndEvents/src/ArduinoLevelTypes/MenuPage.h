@@ -10,11 +10,15 @@
 class MenuPage
 {
     public:    
-    int myPageNum = 0;
+ //   int myPageNum = 0;
     String title;
-    int numOptions = 0;
     MenuLine* pLine = nullptr;
-    int menuIter = 0;
+    MenuLine* pCurrLine = nullptr;// until there are lines
+    // notify need to update display. false assigned in level after draw
+    bool* pDoUpdateDisplay = nullptr;
+    bool ownsLines = false;
+    // Quit/Home as lastLine
+    MenuLine lastLine;
 
     // button to act on menu selection
     int actButtID = 1;// keep track of state so response
@@ -25,28 +29,56 @@ class MenuPage
     // DOES NOT delete the head node passed
     void destroyLines( MenuLine* lineIter )
     {
+        if( !ownsLines ) return;
         // iterate to tail
         if( lineIter->pNextLine ) destroyLines( lineIter->pNextLine );// next node
-        else return;
-        // back from recursive call
-        // delete on the way out
-        delete lineIter->pNextLine;
-        lineIter->pNextLine = nullptr;// safe off
+        else return;// from tail
+        // back from recursive call        
+        delete lineIter->pNextLine;// delete on the way out
+        lineIter->pNextLine = nullptr;// lineIter = new tail node
         return;
     }
 
-    void setup( const char* Title, int NumLines )
+    // Empty. No lines yet
+    void setup( const char* Title, bool& doUpdateDisplay )
     {
         title = Title;
-        numOptions = NumLines + 1;
-        if( pLine )// release
+        pDoUpdateDisplay = &doUpdateDisplay;          
+        if( pLine && ownsLines )// release
         {
             destroyLines( pLine );
             delete pLine;// the head node
             pLine = nullptr;
+            ownsLines = false;
+         //   numOptions = 1;// Quit
         }
 
-        pLine = nullptr;// extra sure
+        pLine = nullptr;
+        lastLine.setupBase( "Quit" );
+        pCurrLine = &lastLine;// until lines are added
+
+        return;
+    }
+
+    // List of Lines is provided. Not owner
+    void setup( const char* Title, bool& doUpdateDisplay, MenuLine& headLine )
+    {
+        // to recycle this instance
+        if( pLine && ownsLines )// release
+        {
+            destroyLines( pLine );
+            delete pLine;// the head node
+            pLine = nullptr;
+            ownsLines = false;
+         //   numOptions = 1;// Quit
+        }
+
+        pLine = &headLine;
+        pCurrLine = pLine;// 1st line
+        ownsLines = false;
+        title = Title;
+        pDoUpdateDisplay = &doUpdateDisplay;
+        lastLine.setupBase( "Quit" );// default
 
         return;
     }
@@ -58,6 +90,8 @@ class MenuPage
         {
              ML.pNextLine = nullptr;// assured
              pLine = &ML;
+             pCurrLine = pLine;
+         //    numOptions = 2;// head + Quit
              return;// done
         }
         // iterate to tail node      
@@ -68,6 +102,7 @@ class MenuPage
             {
                 ML.pNextLine = nullptr;// assured
                 LineIter->pNextLine = &ML;// new tail node
+              //  ++numOptions;
                 break;                    
             }
 
@@ -77,8 +112,9 @@ class MenuPage
 
     void addBaseLine( const char* Label, bool* pAct = nullptr )// type MenuLine = base type
     {
+        ownsLines = true;
         MenuLine* pML = new MenuLine;
-        pML->setupBase( menuIter, Label );
+        pML->setupBase( Label );
         pML->pDoAct = pAct;
         pML->pNextLine = nullptr;// cannot assign. Not allocated yet.
         addLine( *pML );        
@@ -86,8 +122,9 @@ class MenuPage
 
     void addIntegerLine( const char* Label, int& IntVal, int MinVal, int MaxVal, bool* pAct = nullptr )// type MenuLine = base type
     {
+        ownsLines = true;
         IntegerLine* pIL = new IntegerLine;
-        pIL->setupBase( menuIter, Label );
+        pIL->setupBase( Label );
         pIL->setupInt( IntVal, MinVal, MaxVal );
         pIL->pDoAct = pAct;
         pIL->pNextLine = nullptr;// just right for new tail node
@@ -96,8 +133,9 @@ class MenuPage
 
     void addFloatLine( const char* Label, float& FloatVal, float MinVal, float MaxVal, float InScale, bool* pAct = nullptr )// type MenuLine = base type
     {
+        ownsLines = true;
         FloatLine* pFL = new FloatLine;
-        pFL->setupBase( menuIter, Label );
+        pFL->setupBase( Label );
         pFL->setupFloat( FloatVal, MinVal, MaxVal );
         pFL->inScale = InScale;
         pFL->pDoAct = pAct;
@@ -108,10 +146,19 @@ class MenuPage
     String draw()const
     {
         String retVal = title;
-        if( pLine ) retVal += pLine->draw();
 
-        retVal += ( menuIter == numOptions - 1 ) ? "\n *" : "\n  ";
-        retVal += ( myPageNum == 0 ) ? "QUIT to menu" : "Home page";
+        const MenuLine* LineIter = pLine;// read only. may re bind
+        while( LineIter )
+        {
+            retVal += ( pCurrLine == LineIter ) ? "\n* " : "\n  ";// NEW
+            retVal += LineIter->draw();
+            LineIter = LineIter->pNextLine;
+        }
+
+     //   retVal += ( pCurrLine == nullptr ) ? "\n* " : "\n  ";// OLD
+        retVal += ( pCurrLine == &lastLine ) ? "\n* " : "\n  ";// NEW
+        retVal += lastLine.draw();
+     //   retVal += ( myPageNum == 0 ) ? "QUIT to menu" : "Home page";
         
         return retVal;
     }
@@ -119,16 +166,34 @@ class MenuPage
     bool handleEvent( ArduinoEvent AE )
     {
         // handle Quit up front
-        if( AE.type == -1 && (AE.ID == actButtID) && (myPageNum == 0) &&  (menuIter == numOptions - 1) )
-            return false;// Quit
+     //   if( AE.type == -1 && (AE.ID == actButtID) && ( pCurrLine == &lastLine ) )
+     //       return false;// Quit
 
-        // handle menu scroll
+        // no lines? Just a Quit option is ok
+        if( !pLine ) return true;
+
+        // NEW: handle menu scroll
         if( AE.ID == menuButtID )
         {
             if( AE.type == 1 )
-            menuIter = ( 1 + menuIter )%numOptions;
-            // nothing on release
-            return true;
+            {
+                if( pCurrLine->pNextLine ) pCurrLine = pCurrLine->pNextLine;// to next line in list
+                else// next == nullptr
+                {
+                    if( pCurrLine == &lastLine ) pCurrLine = pLine;// to 1st line in list
+                    else pCurrLine = &lastLine;// to lastLine
+                }
+
+            //    if( pCurrLine ) pCurrLine = pCurrLine->pNextLine;// to next line or Home/Quit (nullptr)
+            //    else pCurrLine = pLine;// to 1st line from Home/Quit
+
+                if( pDoUpdateDisplay ) *pDoUpdateDisplay = true;
+            }
+            else if( AE.type == -1 )
+            {
+                // nothing on release
+                return true;
+            }
         }
 
         // handle rotEncButt release?
@@ -141,16 +206,29 @@ class MenuPage
             // pass on for now. each line has an actButtPressed member
         }
 
-        if( pLine ) return pLine->handleEvent( AE );
+        if( pCurrLine )
+        {
+     //       if( pLine->handleEvent( AE ) && pDoUpdateDisplay )// OLD
+            if( pCurrLine->handleEvent( AE ) && pDoUpdateDisplay )// NEW
+                *pDoUpdateDisplay = true;
+        }
+
+        // handle Quit last so lastLine can write true to its bool (change page)
+        if( AE.type == -1 && (AE.ID == actButtID) && ( pCurrLine == &lastLine ) )
+            return false;// Quit
+
         return true;
     }
 
     MenuPage(){}
     ~MenuPage()
     { 
-        destroyLines( pLine );
-        delete pLine;// the head node
-        pLine = nullptr;
+        if( ownsLines && pLine )
+        {
+            destroyLines( pLine );
+            delete pLine;// the head node
+            pLine = nullptr;
+        }
     }
 };
 

@@ -9,7 +9,6 @@
 
 #include "MenuLine.h"
 
-// base class for levels targeting Arduino
 class FloatLine : public MenuLine
 {
     public:    
@@ -23,55 +22,43 @@ class FloatLine : public MenuLine
     float maxVal = 1.0f;
     float iVal = 0;// initial value
 
-    virtual String draw( int LineNum = 0 )const// a toString()
+    virtual String draw()const// a toString()
     {
-        String retVal;
-        if( !( pMenuIter && pfVal ) ) return retVal;// empty
-        retVal = ( *pMenuIter == LineNum ) ? "\n* " : "\n  ";
-        retVal += label;
-        retVal += *pfVal;
-        // append remaining lines
-        if( pNextLine ) retVal += pNextLine->draw( LineNum + 1 );
+        String retVal = label;
+        if( pfVal ) retVal += *pfVal;
+        else retVal += "NULL";
 
+        if( pDoAct ) retVal += *pDoAct ? " ON" : " OFF";       
         return retVal;
     }
 
-    virtual bool handleEvent( ArduinoEvent AE, int LineNum = 0 )
+    virtual bool handleEvent( ArduinoEvent AE )// NEW
     {
-        if( !( pMenuIter && pfVal ) ) return false;
+        if( !pfVal ) return false;// NEW
+        if( handleActButtEvent( AE ) )// NEW          
+            return true;
 
-        if( *pMenuIter == LineNum )
+        if( AE.type == 2 && AE.ID == rotEncID )
         {
-            if( handleActButtEvent( AE, LineNum ) ) return true;// it was an actButt event
-
-            if( AE.type == 2 && AE.ID == rotEncID )
-            {
-                float inFactor = actButtPressed ? inBoost*inScale : inScale;
-                *pfVal += inFactor*AE.value;
-                if( *pfVal < minVal ) *pfVal = minVal;
-                else if( *pfVal > maxVal ) *pfVal = maxVal;
-                return true;
-            }
-            else if( AE.type == 1 && AE.ID == rotEncButtID )
-            {
-                *pfVal = iVal;
-                return true;
-            }
+            float inFactor = actButtPressed ? inBoost*inScale : inScale;
+            *pfVal += inFactor*AE.value;
+            if( *pfVal < minVal ) *pfVal = minVal;
+            else if( *pfVal > maxVal ) *pfVal = maxVal;
+            return true;
         }
-        else if( pNextLine )
+        else if( AE.type == 1 && AE.ID == rotEncButtID )
         {
-            return pNextLine->handleEvent( AE, LineNum + 1 );
+            *pfVal = iVal;
+            return true;
         }
-
-        return true;
+        
+        return false;
     }
-
-    
 
     void setupFloat( float& Value, float MinVal, float MaxVal )
     {
         pfVal = &Value;
-        iVal = *pfVal;
+        iVal = Value;
         minVal = MinVal;
         maxVal = MaxVal;
     }

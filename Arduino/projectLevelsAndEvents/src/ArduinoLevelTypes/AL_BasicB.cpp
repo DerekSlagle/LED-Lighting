@@ -2,18 +2,65 @@
 
 bool AL_BasicB::setup( SSD1306_Display* p_Display )
 {
-    row0 = 0;
-    col0 = 0;
     tFrame = 0.4f;
-
-    for( int n = 0; n < 4; ++n )
-        quadLt[n].setRGB( 70*n, 60*(3-n), 60 + 50*n );
-
-    iterLt = 0;
     tElap = 0.0f;
+
+    // setup home page
+    Page[0].setup( "Home Page", DoUpdateOled, IL_0A );
+    Page[0].lastLine.setupBase( "Quit", nullptr );
+    // int line A
+    IL_0A.setupBase( "iVal A: ", &bVal_0A );
+    iVal_0A = 0;
+    IL_0A.setupInt( iVal_0A, 0, 31 );
+    IL_0A.pNextLine = &IL_0B;
+    // int line B
+    IL_0B.setupBase( "iVal B: ", &bVal_0B );
+    iVal_0B = 32;
+    IL_0B.setupInt( iVal_0B, 32, 63 );
+    IL_0B.pNextLine = &ML_01;
+    // goto page 1
+    ML_01.setupBase( "Goto page 1", gotoPage + 1 );
+    ML_01.pNextLine = &ML_02;
+    // goto page 2
+    ML_02.setupBase( "Goto page 2", gotoPage + 2 );
+    ML_02.pNextLine = nullptr;
+
+    // page 1
+    Page[1].setup( "Page 1", DoUpdateOled, IL_1A );
+    Page[1].lastLine.setupBase( "Go to Home", gotoPage );// go to page 0
+    // int line A
+    IL_1A.setupBase( "iVal 1A: ", &bVal_1A );
+    iVal_1A = 32*4;// 5th row
+    IL_1A.setupInt( iVal_1A, 32*4, 32*5 - 1 );
+    IL_1A.pNextLine = &IL_1B;
+    // int line B
+    IL_1B.setupBase( "iVal 1B: ", &bVal_1B );
+    iVal_1B = 32*5;// 6th row
+    IL_1B.setupInt( iVal_1B, 32*5, 32*6-1 );
+    IL_1B.pNextLine = nullptr;
+
+    // page 2
+    Page[2].setup( "Page 2", DoUpdateOled, IL_2A );
+    Page[2].lastLine.setupBase( "to Home page", gotoPage );// go to page 0
+    // int line A
+    IL_2A.setupBase( "iVal 2A: ", &bVal_2A );
+    iVal_2A = 32*8;// 9th row
+    IL_2A.setupInt( iVal_2A, 32*8, 32*9-1 );
+    IL_2A.pNextLine = &IL_2B;
+    // int line B
+    IL_2B.setupBase( "iVal 2B: ", &bVal_2B );
+    iVal_2B = 32*9;// 10th row
+    IL_2B.setupInt( iVal_2B, 32*9, 32*10-1 );
+    IL_2B.pNextLine = &ML_21;
+    // goto page 1
+    ML_21.setupBase( "Goto page 1", gotoPage + 1 );
+    ML_21.pNextLine = nullptr;
+
+    // the page manager
+    MMP.setup( Page, gotoPage, numPages );
+
     // display
     pDisplay = p_Display;
-    menuIter = 0;
     updateDisplay();
 
     return true;
@@ -25,87 +72,85 @@ bool AL_BasicB::update( float dt )
     if( tElap > tFrame )
     {
         tElap = 0.0f;
-        iterLt = ( 1 + iterLt )%numQLt;
-        return true;
-    }
-    return false;
-}
+        
+    }    
 
-void AL_BasicB::draw()const
-{
-    if( !Target_LG.pLt0 ) return;
-    int numLts = Target_LG.rows*Target_LG.cols;
-
-    for( int r = 0; r < 16; ++r )
+    if( DoUpdateOled )
     {
-        int Nrow = ( r + row0 )*Target_LG.cols;
-        for( int c = 0; c < 8; ++ c )
-        {
-            int N = Nrow + col0 + c;
-            if( N < 0 ) continue;
-            if( N >= numLts ) break;
-            int it = ( iterLt + c/2 )%numQLt;// 2 columns in each color
-            Target_LG.pLt0[N] = quadLt[ it ];
-        }
+        DoUpdateOled = false;
+        updateDisplay();
     }
-}
 
-bool AL_BasicB::handleEvent( ArduinoEvent& rEvent )// change window position
-{
-    // handle Quit up front
-    if( rEvent.type == -1 && (rEvent.ID == actButtID) && (menuIter == numOptions - 1) )
-        return false;// Quit
+    // after handling goto page event = report to display above
+    for( int n = 0; n < numPages; ++n ) gotoPage[n] = true;// normal state
 
-    // return will be true from here
-    if( rEvent.type == 1 )// button press
+    if( !Target_LG.pLt0 ) return false;
+    // draw from page 0
+    Light temp = bVal_0A ? Light(0,200,0) : Light(200,0,0);// green or red
+    for( int n = (iVal_0A/32)*32; n < iVal_0A; ++n )
     {
-        if( rEvent.ID == actButtID )
-        {
-            if( menuIter == 0 )
-            {
-                col0 += 4;
-                if( col0 + cols >= Target_LG.cols )
-                {
-                    col0 -= Target_LG.cols;// back to left
-                }
-            }
-        }
-        else if( rEvent.ID == menuButtID )// menu scroll button
-        {
-            menuIter = ( 1 + menuIter )%numOptions;
-            // draw to display
-            updateDisplay();
-        }
+        Target_LG.pLt0[n] = temp;
     }
-    else if( rEvent.type == -1 )// button release
+    temp = bVal_0B ? Light(0,0,200) : Light(200,0,0);// blue or red
+    for( int n = (iVal_0B/32)*32; n < iVal_0B; ++n )
     {
-        if( rEvent.ID == actButtID )// act
-        {
-            if( menuIter == 0 )
-            {
-                row0 += 2;
-                if( row0 + rows >= Target_LG.rows )
-                {
-                    row0 -= Target_LG.rows;// back to left
-                }
-            }
-        }
+        Target_LG.pLt0[n] = temp;
+    }
+
+    // from page 1
+    temp = bVal_1A ? Light(0,200,0) : Light(200,0,0);// green or red
+    for( int n = (iVal_1A/32)*32; n < iVal_1A; ++n )// one line
+    {
+        Target_LG.pLt0[n] = temp;
+    }
+    temp = bVal_1B ? Light(0,0,200) : Light(200,0,0);// blue or red
+    for( int n = (iVal_1B/32)*32; n < iVal_1B; ++n )
+    {
+        Target_LG.pLt0[n] = temp;
+    }
+
+    // from page 2
+    temp = bVal_2A ? Light(0,200,0) : Light(200,0,0);// green or red
+    for( int n = (iVal_2A/32)*32; n < iVal_2A; ++n )// one line
+    {
+        Target_LG.pLt0[n] = temp;
+    }
+    temp = bVal_2B ? Light(0,0,200) : Light(200,0,0);// blue or red
+    for( int n = (iVal_2B/32)*32; n < iVal_2B; ++n )
+    {
+        Target_LG.pLt0[n] = temp;
     }
 
     return true;
 }
 
+void AL_BasicB::draw()const
+{
+    if( !Target_LG.pLt0 ) return;
+ //   int numLts = Target_LG.rows*Target_LG.cols;
+
+}
+
+bool AL_BasicB::handleEvent( ArduinoEvent& AE )// change window position
+{       
+  //  return Page[2].handleEvent( AE );
+    return MMP.handleEvent( AE );
+}
+
 void AL_BasicB::updateDisplay()const
 {
     if( !pDisplay ) return;// crash avoidance
-    String msg( "Shifter" );
-    msg += ( menuIter == 0 ) ? "\n *" : "\n  ";
-    msg += "Shift cols+rows";
-    // Quit
-    msg += ( menuIter == 1 ) ? "\n *" : "\n  ";
-    msg += "QUIT to menu";
+ //   String msg = Page[2].draw();
+    String msg = MMP.draw();
+    for( int n = 0; n < numPages; ++n )
+        if( !gotoPage[n] )
+        {
+            msg += "\n Go to page ";
+            msg += n;
+        }
+
     // write
     pDisplay->clear();
-    pDisplay->printAt( 2, 2, msg.c_str(), 1 );
+    pDisplay->printAt( 0, 0, msg.c_str(), 1 );
     pDisplay->show();
 }
