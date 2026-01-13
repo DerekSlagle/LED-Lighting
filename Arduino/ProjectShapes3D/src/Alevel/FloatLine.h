@@ -1,0 +1,70 @@
+#ifndef FLOATLINE_H
+#define FLOATLINE_H
+
+// base class for a line on a menu
+// The display may change when an event occurs
+// eg. The line displays an integer value (derived type)
+// which is changed by a rotary encoder (type=2 event)
+// or reset by a button press (type=1 event)
+
+#include "MenuLine.h"
+
+class FloatLine : public MenuLine
+{
+    public:    
+    // for type 2 events
+    float inScale = 1.0f;
+    float inBoost = 4.0f;// *= inScale when actButtPressed
+    float* pfVal = nullptr;
+    float minVal = 0.0f;
+    float maxVal = 1.0f;
+    float iVal = 0;// initial value
+
+    virtual String draw()const// a toString()
+    {
+        String retVal = label;
+        if( pfVal ) retVal += *pfVal;
+        else retVal += "NULL";
+
+        if( pDoAct ) retVal += *pDoAct ? " ON" : " OFF";       
+        return retVal;
+    }
+
+    virtual bool update()
+    {
+        if( !pfVal ) return false;// NEW
+
+        bool retVal = MenuLine::update();
+
+        if(  pRotEncDelta && *pRotEncDelta != 0  )
+        {
+            float inFactor = pActButt->isClosed ? inBoost*inScale : inScale;
+            *pfVal += *pRotEncDelta*inFactor;
+            if( *pfVal < minVal ) *pfVal = minVal;
+            else if( *pfVal > maxVal ) *pfVal = maxVal;
+            retVal = true;
+        }
+        else if( pRotEncButt->pollEvent() == 1 )
+        {
+            *pfVal = iVal;
+            retVal = true;
+        }
+        
+        return retVal;
+    }
+
+    void setupFloat( float& Value, float MinVal, float MaxVal )
+    {
+        pfVal = &Value;
+        iVal = Value;
+        minVal = MinVal;
+        maxVal = MaxVal;
+    }
+
+    // assign rotEncID and inScale directly
+
+    FloatLine(){}
+    virtual ~FloatLine(){}
+};
+
+#endif // FLOATLINE_H
