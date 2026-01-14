@@ -3,6 +3,8 @@
 
 #include "BaseLevel.h"
 #include "../perspect3D/persCircle.h"
+#include "../perspect3D/persRectangle.h"
+#include "../perspect3D/persLine.h"// not a persPt type
 #include "MenuPage.h"
 
 class LevelPerspective : public BaseLevel
@@ -13,6 +15,9 @@ class LevelPerspective : public BaseLevel
     // 3D
     const int numCircles = 5;
     persCircle circleArr[ 5 ];
+    persRectangle rectArr[2];
+    persLine lineArr[4];
+
     const int numShapes = 10;
     persPt* pPersShape[ 10 ];// all
     persPt* pPersSorted[ 10 ];// doDraw only

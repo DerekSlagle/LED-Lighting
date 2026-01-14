@@ -68,6 +68,12 @@ class PageManager
         return true;// unless Quitting level
     }
 
+    void updateDisplay()const
+    {
+        if( !( pPage && pPage->pLine ) ) return;
+        pPage[ currPage ].updateDisplay();
+    }
+
     PageManager(){}
     ~PageManager()
     { 

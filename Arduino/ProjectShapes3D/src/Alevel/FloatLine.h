@@ -19,6 +19,7 @@ class FloatLine : public MenuLine
     float minVal = 0.0f;
     float maxVal = 1.0f;
     float iVal = 0;// initial value
+    bool doNotify = false;// assign *pDoAct = true on value change
 
     virtual String draw()const// a toString()
     {
@@ -42,11 +43,14 @@ class FloatLine : public MenuLine
             *pfVal += *pRotEncDelta*inFactor;
             if( *pfVal < minVal ) *pfVal = minVal;
             else if( *pfVal > maxVal ) *pfVal = maxVal;
+
+            if( doNotify && pDoAct ) *pDoAct = true;
             retVal = true;
         }
         else if( pRotEncButt->pollEvent() == 1 )
         {
             *pfVal = iVal;
+            if( doNotify && pDoAct ) *pDoAct = true;
             retVal = true;
         }
         
