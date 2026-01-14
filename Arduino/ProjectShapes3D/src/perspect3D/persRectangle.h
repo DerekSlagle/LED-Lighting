@@ -6,6 +6,7 @@
 
 class persRectangle : public persPt
 {
+   public:
     // data members
     vec3f pt[4];
  //   vec3f Nu;// unit vector perpendicular to Quad
