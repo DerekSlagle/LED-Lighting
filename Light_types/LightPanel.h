@@ -1,7 +1,7 @@
 #ifndef LIGHTPANEL_H
 #define LIGHTPANEL_H
 
-#include "Light.h"
+#include "../Light.h"
 
 // maps from a bounding array of Lights ( pSrc )
 // to a same sized array tiled to panels

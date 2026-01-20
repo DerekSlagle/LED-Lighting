@@ -3,8 +3,8 @@
 #define RINGPLAYER_H
 
 #include<cmath>
-#include "Light.h"
-#include "FileParser.h"
+#include "../Light.h"
+#include "../FileParser.h"
 
 struct RPdata
 {

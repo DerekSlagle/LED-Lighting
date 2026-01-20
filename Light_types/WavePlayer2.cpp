@@ -225,8 +225,13 @@ void WavePlayer2::drawGraph()const
 {
     Light HiLight( frHi, fgHi, fbHi );
     Light LoLight( frLo, fgLo, fbLo );
-    Light* pBase = pLt0 + gridCols*row0 + col0;
+    // 3 fade lights across line
+    Light fadeLt[3];
+    fadeLt[0].setRGB( 0.25f*frLo + 0.75f*frHi, 0.25f*fgLo + 0.75f*fgHi, 0.25f*fbLo + 0.75f*fbHi );
+    fadeLt[1].setRGB( 0.5f*frLo + 0.5f*frHi, 0.5f*fgLo + 0.5f*fgHi, 0.5f*fbLo + 0.5f*fbHi );
+    fadeLt[2].setRGB( 0.75f*frLo + 0.25f*frHi, 0.75f*fgLo + 0.25f*fgHi, 0.75f*fbLo + 0.25f*fbHi );
 
+    Light* pBase = pLt0 + gridCols*row0 + col0;
     for( int c = 0; c < cols; ++c )
     {
         if( c + col0 < 0 ) continue;
@@ -263,7 +268,7 @@ void WavePlayer2::drawGraph()const
         y *= graphAmp;
         // center up
         y += rows/2;
-        int Rc = (int)y;
+        int Rc = (int)y;        
         // down each column
         for( int r = 0; r < Rc; ++r )
         {
@@ -276,7 +281,11 @@ void WavePlayer2::drawGraph()const
         {
             if( r + row0 < 0 ) continue;
             if( r + row0 >= gridRows ) break;
-            pBase[ r*gridCols + c ] = LoLight;
+            // fade across 4 rows
+            if( r - Rc < 3 )            
+                pBase[ r*gridCols + c ] = fadeLt[ r - Rc ];            
+            else
+                pBase[ r*gridCols + c ] = LoLight;
         }
     }
 
