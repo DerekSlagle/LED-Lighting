@@ -1,10 +1,10 @@
 #include "LevelPerspective.h"
 
-void LevelPerspective::setup()
+void LevelPerspective::setup( const char* fileName )
 {
   MenuLine::setupInOut( *pDisplay, pActButt, pMenuButt, pRotEncButt, *pRotEncDelta );
   Shape::bindToGrid( Target_LG.pLt0, Target_LG.rows, Target_LG.cols );
-  setup3D();
+  setup3D( fileName );
 
   // a page
   FL_CamPosX.setupBase( "Campos X: " );// head
@@ -53,35 +53,54 @@ void LevelPerspective::setup()
   if( !ignoreInput ) updateDisplay();
 }
 
-void LevelPerspective::setup3D()
+void LevelPerspective::setup3D( const char* fileName )
 {
-  persPt::Yh = 16.0f;
+  FileParser FP( "fileName" );
+
+  persPt::Yh = Target_LG.rows/2;
 //  persPt::Z0 = 32.0f;
-  persPt::X0 = 16.0f;
+  persPt::X0 = Target_LG.cols/2;
   persPt::camPos = vec3f(0.0f,10.0f,0.0f);
   for( int n = 0; n < numShapes; ++n ) pPersShape[n] = pPersSorted[n] = nullptr;
   // setup circles
-  circleArr[0].init( vec3f( -40.0f, 4.0f, 140.0f ), 4.0f, Light( 120, 0, 20 ), vec3f() );
+  circleArr[0].init( vec3f( -20.0f, 4.0f, 300.0f ), 4.0f, Light( 120, 0, 20 ), vec3f() );
   circleArr[1].init( vec3f( -20.0f, 4.0f, 100.0f ), 4.0f, Light( 100, 60, 40 ), vec3f() );
-  circleArr[2].init( vec3f( 0.0f, 4.0f, 60.0f ), 4.0f, Light( 80, 0, 60 ), vec3f() );
-  circleArr[3].init( vec3f( 20.0f, 4.0f, 100.0f ), 4.0f, Light( 60, 40, 80 ), vec3f() );
-  circleArr[4].init( vec3f( 40.0f, 4.0f, 140.0f ), 4.0f, Light( 40, 0, 100 ), vec3f() );
+  circleArr[2].init( vec3f( -20.0f, 4.0f, -100.0f ), 4.0f, Light( 80, 0, 60 ), vec3f() );
+  circleArr[3].init( vec3f(  20.0f, 4.0f, 300.0f ), 4.0f, Light( 60, 40, 80 ), vec3f() );
+  circleArr[4].init( vec3f(  20.0f, 4.0f, 100.0f ), 4.0f, Light( 40, 0, 100 ), vec3f() );
+  circleArr[5].init( vec3f(  20.0f, 4.0f, -100.0f ), 4.0f, Light( 20, 0, 120 ), vec3f() );
   // rectangles
-  rectArr[0].init( vec3f( 20.0f, 16.0f, -200.0f ), 12.0f, 8.0f, vec3f(0.0f,0.0f,1.0f), Light(100,0,100) );
+  rectArr[0].init( vec3f( 20.0f, 16.0f, -100.0f ), 12.0f, 8.0f, vec3f(0.0f,0.0f,1.0f), Light(100,0,100) );
   rectArr[1].init( vec3f( -30.0f, 16.0f, 200.0f ), 12.0f, 8.0f, vec3f(0.0f,0.0f,1.0f), Light(100,100,0) );
+  // east marker
+  rectArr[2].init( vec3f( -500.0f, 16.0f, 0.0f ), 12.0f, 8.0f, vec3f(1.0f,0.0f,0.0f), Light(100,200,0) );
+  // west
+  rectArr[3].init( vec3f(  500.0f, 16.0f, 0.0f ), 8.0f, 12.0f, vec3f(-1.0f,0.0f,0.0f), Light(0,200,100) );
+  rectArr[0].isMoving = rectArr[1].isMoving = true;
+  rectArr[0].vel = rectArr[1].vel = vec3f( 0.0f, 0.0f, -100.0f );
   // assign pointers
   int N = 0;
-  for( int k = 0; k < numCircles; ++k ) pPersShape[N++] = circleArr + k;
+  for( int k = 0; k < numCircles; ++k )
+  {
+    circleArr[k].isMoving = true;
+    circleArr[k].vel = vec3f( 0.0f, 0.0f, -100.0f );
+    pPersShape[N++] = circleArr + k;
+  }
   // rects
-  pPersShape[N++] = rectArr;
-  pPersShape[N++] = rectArr + 1;
+  for( int k = 0; k < numRects; ++k )
+  {
+    pPersShape[N++] = rectArr + k;
+  }
+  
+  // all remeining == nullptr. We now break on nullptr
 
   // lines NOT a persPt type. draw after background
   lineArr[0].init( vec3f( -6.0f, 0.0f, -300.0f ), vec3f( -6.0f, 0.0f, 300.0f ), Light(0,0,0) );
   lineArr[1].init( vec3f( 6.0f, 0.0f, -300.0f ), vec3f( 6.0f, 0.0f, 300.0f ), Light(0,0,0) );
+  lineArr[0].theLine.doBlend = lineArr[1].theLine.doBlend = false;
   // east and west markers
-  lineArr[2].init( vec3f( -500.0f, 10.0f, -10.0f ), vec3f( -500.0f, 10.0f, 10.0f ), Light(200,0,60) );
-  lineArr[3].init( vec3f( 500.0f, 10.0f, -10.0f ), vec3f( 500.0f, 10.0f, 10.0f ), Light(60,200,0) );
+ // lineArr[2].init( vec3f( -500.0f, 10.0f, -10.0f ), vec3f( -500.0f, 10.0f, 10.0f ), Light(200,0,60) );
+ // lineArr[3].init( vec3f( 500.0f, 10.0f, -10.0f ), vec3f( 500.0f, 10.0f, 10.0f ), Light(60,200,0) );
 }
 
 void LevelPerspective::processInput()
@@ -122,12 +141,18 @@ void LevelPerspective::processInput()
     if( MenuLine::pRotEncButt && MenuLine::pRotEncButt->pollEvent() == 1 )
     {
       if( thePage.pCurrLine == &FL_Yaw )
-      {
+      {// full reset
         persPt::xuCam = persPt::xHat;
         persPt::yuCam = persPt::yHat;
         persPt::zuCam = persPt::zHat;
         compassHeading = 0.0f;
         pitchAngle = 0.0f;
+        rollAngle = 0.0f;
+        thePage.updateDisplay();
+      }
+      else if( thePage.pCurrLine == &FL_Roll )
+      {
+        persPt::keepXuLevel();
         rollAngle = 0.0f;
         thePage.updateDisplay();
       }
@@ -143,8 +168,10 @@ void LevelPerspective::update( float dt )
    processInput();
 
    // lines
-   for( int n = 0; n < 4; ++n )
+   for( int n = 0; n < numLines; ++n )
     lineArr[n].update(dt);
+  // fill does not draw anything
+//  persLine::fillBetween( lineArr[0].theLine, lineArr[1].theLine );
    
   numToDraw = 0;
   for( int n = 0; n < numShapes; ++n )
@@ -156,7 +183,27 @@ void LevelPerspective::update( float dt )
       pPersSorted[ numToDraw ] = pPersShape[n];
       ++numToDraw;
     }
+    // move back to z = 300
+    if( pPersShape[n]->isMoving && pPersShape[n]->pos.z < -300.0f )
+    {
+      vec3f newPos = pPersShape[n]->pos;
+      newPos.z = 300.0f;
+      pPersShape[n]->setPosition( newPos );
+    }
   }
+
+  /*
+  for( int n = 0; n < numCircles; ++n )
+  {
+    if( circleArr[n].pos.z < -300.0f )
+    {
+      vec3f newPos = circleArr[n].pos;
+      newPos.z = 300.0f;
+      circleArr[n].setPosition( newPos );
+    }
+  }
+    */
+
   // sort? OK do it
   persPt::sortByDistance( pPersSorted, numToDraw );
     
@@ -186,12 +233,13 @@ void LevelPerspective::draw()const
   }
 
   // lines
-  for( int n = 0; n < 4; ++n )
+  for( int n = 0; n < numLines; ++n )
     lineArr[n].draw();
 
   // persPt types
   for( int n = 0; n < numToDraw; ++n )
   {
+    if( !pPersSorted[n] ) break;
     pPersSorted[n]->draw();
   }
 }

@@ -12,7 +12,7 @@ class Uint8_tLine : public MenuLine
     uint8_t minVal = 0.0f;
     uint8_t maxVal = 1.0f;
     uint8_t iVal = 0;// initial value
-    int dblVal = 0;// to halve the delta
+    int dblVal = 2*iVal;// to halve the delta
    
 
     // each derived defines a setup procedure
@@ -28,7 +28,7 @@ class Uint8_tLine : public MenuLine
 
     virtual bool update()
     {
-        if( !piVal ) return false;// NEW
+        if( !pVal ) return false;// NEW
 
         bool retVal = MenuLine::update();
 
@@ -60,6 +60,7 @@ class Uint8_tLine : public MenuLine
         iVal = Value;
         minVal = MinVal;
         maxVal = MaxVal;
+        dblVal = 2*Value;
     }
 
     Uint8_tLine(){}

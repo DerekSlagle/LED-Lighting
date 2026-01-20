@@ -60,6 +60,7 @@ class IntegerLine : public MenuLine
         iVal = Value;
         minVal = MinVal;
         maxVal = MaxVal;
+        dblVal = 2*Value;
     }
 
     IntegerLine(){}

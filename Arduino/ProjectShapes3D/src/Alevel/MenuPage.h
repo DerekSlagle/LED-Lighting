@@ -2,8 +2,9 @@
 #define MENUPAGE_H
 
 #include "Arduino.h"
-#include "FloatLine.h"
-#include "IntegerLine.h"
+#include "MenuLine.h"
+//#include "FloatLine.h"
+//#include "IntegerLine.h"
 
 class MenuPage
 {
@@ -104,7 +105,7 @@ class MenuPage
         {
             if( pCurrLine->pNextLine ) pCurrLine = pCurrLine->pNextLine;// to next line in list
             else pCurrLine = pLine;// to 1st line in list
-            updateDisplay();
+        //    updateDisplay();
             retVal = true;
         }
         else if( MenuLine::pMenuButt->pollEvent() == -1 )

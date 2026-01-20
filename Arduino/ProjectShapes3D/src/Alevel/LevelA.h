@@ -4,6 +4,7 @@
 #include "BaseLevel.h"
 #include "LightTypes/WavePlayer2.h"
 #include "MenuPage.h"
+#include "FloatLine.h"
 
 class LevelA : public BaseLevel
 {

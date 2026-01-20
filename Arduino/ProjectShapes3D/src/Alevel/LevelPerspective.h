@@ -6,6 +6,8 @@
 #include "../perspect3D/persRectangle.h"
 #include "../perspect3D/persLine.h"// not a persPt type
 #include "MenuPage.h"
+#include "FloatLine.h"
+#include "../FileParser.h"
 
 class LevelPerspective : public BaseLevel
 {
@@ -13,14 +15,16 @@ class LevelPerspective : public BaseLevel
     // lots of inherited members
 
     // 3D
-    const int numCircles = 5;
-    persCircle circleArr[ 5 ];
-    persRectangle rectArr[2];
-    persLine lineArr[4];
+    const int numCircles = 6;
+    persCircle circleArr[ 6 ];
+    const int numRects = 4;
+    persRectangle rectArr[4];
+    const int numLines = 2;
+    persLine lineArr[2];
 
-    const int numShapes = 10;
-    persPt* pPersShape[ 10 ];// all
-    persPt* pPersSorted[ 10 ];// doDraw only
+    const int numShapes = 20;
+    persPt* pPersShape[ 20 ];// all
+    persPt* pPersSorted[ 20 ];// doDraw only
     int numToDraw = 0;// found in update() used in draw()
 
     // input
@@ -29,8 +33,8 @@ class LevelPerspective : public BaseLevel
     FloatLine FL_Yaw, FL_Pitch, FL_Roll, FL_Z0;
     float compassHeading = 0.0f, pitchAngle = 0.0f, rollAngle = 0.0f;
 
-    void setup();
-    void setup3D();
+    void setup( const char* fileName );
+    void setup3D( const char* fileName );
     
     virtual void updateDisplay()const;
     virtual void processInput();
