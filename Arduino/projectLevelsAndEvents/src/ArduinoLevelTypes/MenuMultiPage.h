@@ -55,10 +55,11 @@ class MenuMultiPage
                 {
                     pGotoPage[n] = true;
                     // cleanup of currPage?
+                    pPage[currPage].actButtPressed = false;
                     currPage = n;
+                    pPage[currPage].actButtPressed = false;
                     // assign currLine
-                    if( pPage[n].pLine ) pPage[n].pCurrLine = pPage[n].pLine;// if > 0 lines
-                    else pPage[n].pCurrLine = &( pPage[n].lastLine );// if no lines. Home only
+                    pPage[n].pCurrLine = pPage[n].pLine;// if > 0 lines
                     // update display
                     if( pPage[n].pDoUpdateDisplay ) *pPage[n].pDoUpdateDisplay = true;
                     break;
@@ -66,7 +67,7 @@ class MenuMultiPage
             }
 
             // check for quit after currPage change
-            if( ( currPage == 0 ) && ( pPage[0].pCurrLine == &pPage[0].lastLine ) )// last line is separate from list
+            if( ( currPage == 0 ) && ( pPage[0].pCurrLine->pNextLine == nullptr ) )// last line is separate from list
                 return false;// Quit
         }
 

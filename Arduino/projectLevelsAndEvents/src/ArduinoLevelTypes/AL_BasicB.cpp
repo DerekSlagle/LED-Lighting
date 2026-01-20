@@ -6,8 +6,6 @@ bool AL_BasicB::setup( SSD1306_Display* p_Display )
     tElap = 0.0f;
 
     // setup home page
-    Page[0].setup( "Home Page", DoUpdateOled, IL_0A );
-    Page[0].lastLine.setupBase( "Quit", nullptr );
     // int line A
     IL_0A.setupBase( "iVal A: ", &bVal_0A );
     iVal_0A = 0;
@@ -23,11 +21,13 @@ bool AL_BasicB::setup( SSD1306_Display* p_Display )
     ML_01.pNextLine = &ML_02;
     // goto page 2
     ML_02.setupBase( "Goto page 2", gotoPage + 2 );
-    ML_02.pNextLine = nullptr;
+    ML_02.pNextLine = &ML_Quit;
+    ML_Quit.setupBase( " Quit" );
+    ML_Quit.pNextLine = nullptr;
+
+    Page[0].setup( "    ** Home Page **", DoUpdateOled, IL_0A );
 
     // page 1
-    Page[1].setup( "Page 1", DoUpdateOled, IL_1A );
-    Page[1].lastLine.setupBase( "Go to Home", gotoPage );// go to page 0
     // int line A
     IL_1A.setupBase( "iVal 1A: ", &bVal_1A );
     iVal_1A = 32*4;// 5th row
@@ -37,11 +37,16 @@ bool AL_BasicB::setup( SSD1306_Display* p_Display )
     IL_1B.setupBase( "iVal 1B: ", &bVal_1B );
     iVal_1B = 32*5;// 6th row
     IL_1B.setupInt( iVal_1B, 32*5, 32*6-1 );
-    IL_1B.pNextLine = nullptr;
+    IL_1B.pNextLine = &ML_1home;
+    ML_1home.setupBase( "Home", gotoPage );
+    ML_1home.pNextLine = nullptr;
+    // call after
+    Page[1].setup( "    ** Page 1 **", DoUpdateOled, IL_1A );
+  //  Page[1].lastLine.setupBase( "Go to Home", gotoPage );// go to page 0
 
     // page 2
-    Page[2].setup( "Page 2", DoUpdateOled, IL_2A );
-    Page[2].lastLine.setupBase( "to Home page", gotoPage );// go to page 0
+  //  Page[2].setup( "Page 2", DoUpdateOled, IL_2A );
+  //  Page[2].lastLine.setupBase( "to Home page", gotoPage );// go to page 0
     // int line A
     IL_2A.setupBase( "iVal 2A: ", &bVal_2A );
     iVal_2A = 32*8;// 9th row
@@ -54,7 +59,11 @@ bool AL_BasicB::setup( SSD1306_Display* p_Display )
     IL_2B.pNextLine = &ML_21;
     // goto page 1
     ML_21.setupBase( "Goto page 1", gotoPage + 1 );
-    ML_21.pNextLine = nullptr;
+    ML_21.pNextLine = &ML_2home;
+    ML_2home.setupBase( "Home", gotoPage );
+    ML_2home.pNextLine = nullptr;
+    // after
+    Page[2].setup( "    ** Page 2 **", DoUpdateOled, IL_2A );
 
     // the page manager
     MMP.setup( Page, gotoPage, numPages );
@@ -75,14 +84,8 @@ bool AL_BasicB::update( float dt )
         
     }    
 
-    if( DoUpdateOled )
-    {
-        DoUpdateOled = false;
-        updateDisplay();
-    }
-
     // after handling goto page event = report to display above
-    for( int n = 0; n < numPages; ++n ) gotoPage[n] = true;// normal state
+  //  for( int n = 0; n < numPages; ++n ) gotoPage[n] = true;// normal state
 
     if( !Target_LG.pLt0 ) return false;
     // draw from page 0
@@ -134,7 +137,14 @@ void AL_BasicB::draw()const
 bool AL_BasicB::handleEvent( ArduinoEvent& AE )// change window position
 {       
   //  return Page[2].handleEvent( AE );
-    return MMP.handleEvent( AE );
+    if( !MMP.handleEvent( AE ) ) return false;
+    if( DoUpdateOled )
+    {
+        DoUpdateOled = false;
+        updateDisplay();
+    }
+
+    return true;
 }
 
 void AL_BasicB::updateDisplay()const

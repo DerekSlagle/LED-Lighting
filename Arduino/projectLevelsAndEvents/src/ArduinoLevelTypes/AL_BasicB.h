@@ -7,6 +7,7 @@
 #include "../SSD_1306Component.h"
 
 #include "MenuMultiPage.h"
+#include "IntegerLine.h"
 
 class AL_BasicB : public ArduinoLevel
 {
@@ -35,16 +36,19 @@ class AL_BasicB : public ArduinoLevel
     IntegerLine IL_0A, IL_0B;
     // goto page: 1, 2
     MenuLine ML_01, ML_02;// for Home page
+    MenuLine ML_Quit;
 
     // page 1
     int iVal_1A = 0, iVal_1B = 0;// for lines
     bool bVal_1A = false, bVal_1B = false;// point to
-    IntegerLine IL_1A, IL_1B;// lastLine goto 0
+    IntegerLine IL_1A, IL_1B;
+    MenuLine ML_1home;// goto 0
     // page 2
     int iVal_2A = 0, iVal_2B = 0;// for lines
     bool bVal_2A = false, bVal_2B = false;// point to
-    IntegerLine IL_2A, IL_2B;// lastLine goto 0
+    IntegerLine IL_2A, IL_2B;
     MenuLine ML_21;// goto page 1
+    MenuLine ML_2home;// goto page 0
 
     SSD1306_Display* pDisplay = nullptr;
     void updateDisplay()const;

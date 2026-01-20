@@ -21,17 +21,19 @@ class MenuLine
 
     // button to act on menu selection
     int actButtID = 1;// keep track of state so response
-    bool actButtPressed = false;//  to other events (eg type=2 in derived)
+    bool* pActButtPressed = nullptr;//  to other events (eg type=2 in derived)
     bool* pDoAct = nullptr;// so user can follow through with code execution if any
 
     //void setupBase( int& MenuIter, int myIterValue, const char* Label )
  //   void setupBase( int& MenuIter, const char* Label )// OLD
-    void setupBase( const char* Label, bool* p_DoAct = nullptr )// NEW
+    void setupBase( const char* Label, bool* p_DoAct = nullptr, MenuLine* p_NextLine = nullptr )// NEW
     {
      //   pMenuIter = &MenuIter;
      //   myIterVal = myIterValue;
         label = Label;
         pDoAct = p_DoAct;
+        pActButtPressed = nullptr;
+        pNextLine = p_NextLine;
     }
 
     // each derived defines a setup procedure
@@ -51,14 +53,14 @@ class MenuLine
         {
             if( AE.type == 1 )// press
             {
-                actButtPressed = true;
+             //   actButtPressed = true;
                 if( pDoAct ) *pDoAct = true;
                 return true;
             }
 
             if( AE.type == -1 )// release
             {
-                actButtPressed = false;
+             //   actButtPressed = false;
                 if( pDoAct ) *pDoAct = false;
                 return true;
             }            

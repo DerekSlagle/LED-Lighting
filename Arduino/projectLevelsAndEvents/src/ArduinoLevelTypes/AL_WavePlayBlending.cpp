@@ -40,8 +40,28 @@ bool AL_WavePlayBlending::setup( const char* setupFilename, SSD1306_Display* p_D
     tElapWP = 0.0f;
     currWP = 0;
 
+    // setup page
+    fl_tPeriodWP.setupBase( "tPeriodWP: " ) ;
+    fl_tPeriodWP.setupFloat( tPeriodWP, 2.0f, 50.0f );
+    fl_tPeriodWP.inScale = 0.5f;
+    fl_tPeriodWP.pNextLine = &fl_tTransWP;
+    fl_tTransWP.setupBase( "tTransWP: " ) ;
+    fl_tTransWP.setupFloat( tTransWP, 0.2f, 8.0f );
+    fl_tTransWP.inScale = 0.1f;
+    fl_tTransWP.pNextLine = &fl_timeScale;
+    fl_timeScale.setupBase( "timeScale: " ) ;
+    fl_timeScale.setupFloat( timeScale, -2.0f, 2.0f );
+    fl_timeScale.inScale = 0.05f;
+    fl_timeScale.pNextLine = &ML_RandomNext;
+    ML_RandomNext.setupBase( "Random...", &callRandomNext ) ;
+    ML_RandomNext.pNextLine = &ML_Quit;
+    ML_Quit.setupBase( "Quit" ) ;
+    ML_Quit.pNextLine = nullptr;
+
+    thePage.setup( " -- Wave Blends --", doUpdateDisplay, fl_tPeriodWP );
+
     pDisplay = p_Display;
-    menuIter = 0;
+  //  menuIter = 0;
     updateDisplay();
 
     return true;
@@ -177,7 +197,23 @@ bool AL_WavePlayBlending::update( float dt )
 
 bool AL_WavePlayBlending::handleEvent( ArduinoEvent& rEvent )
 {
-    return handleEvent0( rEvent );
+  if( !thePage.handleEvent( rEvent ) ) return false;// Bail to level menu
+    
+  if( doUpdateDisplay )
+  {
+      updateDisplay();
+      doUpdateDisplay = false;
+  }
+
+  if( callRandomNext )
+  {
+    callRandomNext = false;
+    randomNext();
+  }
+  
+  return true;
+
+ //   return handleEvent0( rEvent );
 }
 
 void AL_WavePlayBlending::draw()const
@@ -189,6 +225,8 @@ void AL_WavePlayBlending::draw()const
 void AL_WavePlayBlending::updateDisplay()const
 {
     if( !pDisplay ) return;// crash avoidance
+    String msg = thePage.draw();
+    /*
     String msg( "WavePlayer" );
     // times
     msg += ( menuIter == 0 ) ? "\n* " : "\n  ";
@@ -205,11 +243,12 @@ void AL_WavePlayBlending::updateDisplay()const
     // Quit
     msg += ( menuIter == numOptions - 1 ) ? "\n* " : "\n  ";
     msg += "QUIT to menu";
+  */
     // updated once per second automatically
-    msg += "\nUpTime: ";
+    msg += "\ndtLoop: ";
     msg += updateTime;
     if( (tElapWP > tPeriodWP) && (tElapWP < tPeriodWP + tTransWP) )// blending
-      msg += "\n  BLENDING";
+      msg += " BLENDING";
 
     // write
     pDisplay->clear();
@@ -217,6 +256,33 @@ void AL_WavePlayBlending::updateDisplay()const
     pDisplay->show();
 }
 
+void AL_WavePlayBlending::randomNext()const
+{
+  int nextWP = ( 1 + currWP )%numWP;// roll index
+  wvPlay[ nextWP ].AmpRt = 0.01f*( rand()%101 );
+  wvPlay[ nextWP ].AmpLt = 1.0f - wvPlay[ nextWP ].AmpRt;
+
+  wvPlay[ nextWP ].wvLenLt = 100.0f + 2.0f*(rand()%101 );
+  wvPlay[ nextWP ].wvLenRt = 100.0f + 2.0f*(rand()%101);
+  wvPlay[ nextWP ].wvSpdLt = 100.0f + 1.0f*(rand()%101);
+  wvPlay[ nextWP ].wvSpdRt = wvPlay[ nextWP ].wvSpdLt;
+  wvPlay[ nextWP ].periodLt = wvPlay[ nextWP ].wvLenLt/wvPlay[ nextWP ].wvSpdLt;
+  wvPlay[ nextWP ].periodRt = wvPlay[ nextWP ].wvLenRt/wvPlay[ nextWP ].wvSpdRt;
+  wvPlay[ nextWP ].tElapLt = wvPlay[ nextWP ].tElapRt = 0.0f;
+  // colors
+  wvPlay[ nextWP ].frHi = rand()%256;
+  wvPlay[ nextWP ].fgHi = rand()%256;
+  wvPlay[ nextWP ].fbHi = rand()%256;
+  
+  wvPlay[ nextWP ].frLo = 255 - wvPlay[ nextWP ].frHi;
+  wvPlay[ nextWP ].fgLo = 255 - wvPlay[ nextWP ].fgHi;
+  wvPlay[ nextWP ].fbLo = 255 - wvPlay[ nextWP ].fbHi;
+  // coefficients
+  wvPlay[ nextWP ].nTermsLt = wvPlay[ nextWP ].nTermsRt = 0;
+  wvPlay[ nextWP ].C_Lt = wvPlay[ nextWP ].C_Rt = nullptr;
+}
+
+/*
 bool AL_WavePlayBlending::handleEvent0( ArduinoEvent AE )
 {
   // handle Quit up front
@@ -294,29 +360,4 @@ bool AL_WavePlayBlending::handleEvent0( ArduinoEvent AE )
 
   return true;
 }
-
-void AL_WavePlayBlending::randomNext()const
-{
-  int nextWP = ( 1 + currWP )%numWP;// roll index
-  wvPlay[ nextWP ].AmpRt = 0.01f*( rand()%101 );
-  wvPlay[ nextWP ].AmpLt = 1.0f - wvPlay[ nextWP ].AmpRt;
-
-  wvPlay[ nextWP ].wvLenLt = 100.0f + 2.0f*(rand()%101 );
-  wvPlay[ nextWP ].wvLenRt = 100.0f + 2.0f*(rand()%101);
-  wvPlay[ nextWP ].wvSpdLt = 100.0f + 1.0f*(rand()%101);
-  wvPlay[ nextWP ].wvSpdRt = wvPlay[ nextWP ].wvSpdLt;
-  wvPlay[ nextWP ].periodLt = wvPlay[ nextWP ].wvLenLt/wvPlay[ nextWP ].wvSpdLt;
-  wvPlay[ nextWP ].periodRt = wvPlay[ nextWP ].wvLenRt/wvPlay[ nextWP ].wvSpdRt;
-  wvPlay[ nextWP ].tElapLt = wvPlay[ nextWP ].tElapRt = 0.0f;
-  // colors
-  wvPlay[ nextWP ].frHi = rand()%256;
-  wvPlay[ nextWP ].fgHi = rand()%256;
-  wvPlay[ nextWP ].fbHi = rand()%256;
-  
-  wvPlay[ nextWP ].frLo = 255 - wvPlay[ nextWP ].frHi;
-  wvPlay[ nextWP ].fgLo = 255 - wvPlay[ nextWP ].fgHi;
-  wvPlay[ nextWP ].fbLo = 255 - wvPlay[ nextWP ].fbHi;
-  // coefficients
-  wvPlay[ nextWP ].nTermsLt = wvPlay[ nextWP ].nTermsRt = 0;
-  wvPlay[ nextWP ].C_Lt = wvPlay[ nextWP ].C_Rt = nullptr;
-}
+*/

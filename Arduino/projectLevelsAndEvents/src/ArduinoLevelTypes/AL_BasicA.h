@@ -5,34 +5,58 @@
 #include "ArduinoLevel.h"
 #include "../LightSourceTypes/LightGrid.h"
 #include "../SSD_1306Component.h"// use a display
-//#include "../switchSPST.h"
+#include "LightTypes/PointPlayer.h"
+#include "MenuMultiPage.h"
+#include "FloatLine.h"
+#include "Uint8_tLine.h"
 
 class AL_BasicA : public ArduinoLevel
 {
     public:
-    // MUST HAVE members
-    LightGrid Target_LG;// owned by user
+    // MUST HAVE members? Or equivalent
+    Light* pLt0;// owned by user
+    int gridRows = 1, gridCols = 1;
     void bindToGrid( Light* pGrid0, int GridRows, int GridCols )
-    { Target_LG.init( *pGrid0, GridRows, GridCols ); }
+    { pLt0 = pGrid0; gridRows = GridRows; gridCols = GridCols; }
 
     // members for this level
-    Light hiLt, loLt;
-    bool drawHiLt = true;
-    float tElap = 0.0f;
-    float tFrame = 2.0f;
-    int row0 = 0, col0 = 0;
-    int rows = 6, cols = 12;
-    // for use with menu
-    int menuButtID = 2;
-    int numOptions = 2;// Quit is last option
-    int menuIter = 0;
+    Light clearLt;
+
+    static const int numPlayers = 4;
+    PointPlayer PP[4];// 4 points to each
+    static const int nPtEach = 16;
+    static const int numPoints = 64;
+    uint8_t PathX[64], PathY[64];// 16 for each of 4
+    bool showFirstOnly = false;
+    
+    // path point assigned randomly ahead
+    int numTries = 0;// watching on oled
+
+    // menu
+    MenuMultiPage MMP;
+    MenuPage Page[2];
+    bool gotoPage[2];
+    // Page[0]
+    FloatLine FLa_Speed, FLa_FadeLength;// PP[0]
+    FloatLine FLb_Speed, FLb_FadeLength;// all 3 others
+    bool doUpSpeed = false, doUpLength = false;
+    MenuLine ML_More;// gotoPage + 1
+    MenuLine ML_Quit;
+    // Page[1] 
+    MenuLine ML_StartAll, ML_StartPairs;
+    bool doStartAll = false, doStartPairs = false;// for above
+    Uint8_tLine UL_Red, UL_Green, UL_Blue;// for clearLt
+    MenuLine ML_Back;
+    void setupMenu();
+
     SSD1306_Display* pDisplay = nullptr;
+    bool DoUpdateOled = false;// menu writes
     void updateDisplay()const;
 
     bool setup( SSD1306_Display* p_Display );
     virtual bool update( float dt );
     virtual void draw()const;
-    virtual bool handleEvent( ArduinoEvent& rEvent );
+    virtual bool handleEvent( ArduinoEvent& AE );
 
     AL_BasicA(){}
     virtual ~AL_BasicA(){}

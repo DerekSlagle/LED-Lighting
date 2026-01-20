@@ -9,6 +9,10 @@
 #include "FileParser.h"
 #include "SSD_1306Component.h"// use a display
 
+#include "MenuPage.h"
+#include "FloatLine.h"
+#include "IntegerLine.h"
+
 class AL_WavePlayBlending : public ArduinoLevel
 {
     public:
@@ -36,14 +40,22 @@ class AL_WavePlayBlending : public ArduinoLevel
     void blendBuffers( float U, float dt );
 
     // for use with menu
-    int menuButtID = 2;
-    int rotEncID = 1;
-    float rotEncScale = 0.5f;
+    MenuPage thePage;
+    FloatLine fl_tPeriodWP, fl_tTransWP, fl_timeScale;
+    MenuLine ML_RandomNext;
+    bool callRandomNext = false;
+    MenuLine ML_Quit;
+
+    // old
+ //   int menuButtID = 2;
+ //   int rotEncID = 1;
+ //   float rotEncScale = 0.5f;
     float timeScale = 1.0f;
-    int numOptions = 5;// Adjust tPeriodWP, tTransWP, timeScale, randomize next and Quit
-    int menuIter = 0;
+ //   int numOptions = 5;// Adjust tPeriodWP, tTransWP, timeScale, randomize next and Quit
+ //   int menuIter = 0;
     SSD1306_Display* pDisplay = nullptr;
     void updateDisplay()const;
+    bool doUpdateDisplay = false;// MenuPage has pointer
      // timed update for Home page
     int updateTime = 0;
     float tElapUp = 0.0f;// 1.0f limit in update()
@@ -54,7 +66,7 @@ class AL_WavePlayBlending : public ArduinoLevel
     virtual void draw()const;
     virtual bool handleEvent( ArduinoEvent& rEvent );
     // trying new central treatment
-    bool handleEvent0( ArduinoEvent AE );
+ //   bool handleEvent0( ArduinoEvent AE );
 
     AL_WavePlayBlending(){}
     virtual ~AL_WavePlayBlending()

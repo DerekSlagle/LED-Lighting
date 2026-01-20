@@ -1,27 +1,28 @@
-#ifndef INTEGERLINE_H
-#define INTEGERLINE_H
+#ifndef UINT8_TLINE_H
+#define UINT8_TLINE_H
 
 #include "MenuLine.h"
 
-class IntegerLine : public MenuLine
+class Uint8_tLine : public MenuLine
 {
     public:
     // for type 2 events
     int rotEncID = 1;
     int rotEncButtID = 3;// for value reset
-  //  float inScale = 1.0f;
+    // for type 2 events
     int inBoost = 8;// += inBoost when actButtPressed
-    int* piVal = nullptr;
-    int minVal = 0.0f;
-    int maxVal = 1.0f;
-    int iVal = 0;// initial value
+    uint8_t* pVal = nullptr;
+    uint8_t minVal = 0.0f;
+    uint8_t maxVal = 1.0f;
+    uint8_t iVal = 0;// initial value
+    int dblVal = 2*iVal;// to halve the delta
    
 
     // each derived defines a setup procedure
     virtual String draw()const
     {
         String retVal = label;
-        if( piVal ) retVal += *piVal;
+        if( pVal ) retVal += (int)(*pVal);
         else retVal += "NULL";
 
         if( pDoAct ) retVal += *pDoAct ? " ON" : " OFF";       
@@ -30,39 +31,42 @@ class IntegerLine : public MenuLine
 
     virtual bool handleEvent( ArduinoEvent AE )
     {
-        if( !piVal ) return false;// NEW        
+        if( !pVal ) return false;// NEW        
         if( handleActButtEvent( AE ) ) return true;// it was an actButt event
 
         if( AE.type == 2 && AE.ID == rotEncID )
         {
             int incAmount = (pActButtPressed && *pActButtPressed) ? inBoost : 1;
-            if( AE.value > 0 ) *piVal += incAmount;
-            else *piVal -= incAmount;
+            if( AE.value > 0 ) dblVal += incAmount;
+            else dblVal -= incAmount;
 
-            if( *piVal < minVal ) *piVal = minVal;
-            else if( *piVal > maxVal ) *piVal = maxVal;
+            if( dblVal < 2*minVal ) dblVal = 2*minVal;
+            else if( dblVal > 2*maxVal ) dblVal = 2*maxVal;
+
+            *pVal = (uint8_t)(dblVal/2);
             return true;
         }
         // handle other event types
         else if( AE.type == 1 && AE.ID == rotEncButtID )
         {
-            *piVal = iVal;
+            *pVal = iVal;
             return true;
         }
 
         return false; 
     }
 
-    void setupInt( int& Value, int MinVal, int MaxVal )
+    void setupUint8_t( uint8_t& Value, uint8_t MinVal, uint8_t MaxVal )
     {
-        piVal = &Value;
+        pVal = &Value;
         iVal = Value;
         minVal = MinVal;
         maxVal = MaxVal;
+        dblVal = 2*Value;
     }
 
-    IntegerLine(){}
-    virtual ~IntegerLine(){}
+    Uint8_tLine(){}
+    virtual ~Uint8_tLine(){}
 };
 
-#endif // INTEGERLINE_H
+#endif // UINT8_TLINE_H

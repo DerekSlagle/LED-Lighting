@@ -40,7 +40,7 @@ class FloatLine : public MenuLine
 
         if( AE.type == 2 && AE.ID == rotEncID )
         {
-            float inFactor = actButtPressed ? inBoost*inScale : inScale;
+            float inFactor = (pActButtPressed && *pActButtPressed) ? inBoost*inScale : inScale;
             *pfVal += inFactor*AE.value;
             if( *pfVal < minVal ) *pfVal = minVal;
             else if( *pfVal > maxVal ) *pfVal = maxVal;
