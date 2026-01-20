@@ -19,11 +19,15 @@ void persRectangle::setColor( Light color )
 
 void persRectangle::setRectCorners()// assign pos, Sz, Xu, Yu from the vtx[4]
 {
+    if( !doDraw ) return;
+    
     theRect.pos = vtx[1];
-    theRect.Sz.x = vtx[2].x - vtx[1].x;
-    if( theRect.Sz.x < 0.0f ) theRect.Sz.x *= -1.0f;
-    theRect.Sz.y = vtx[0].y - vtx[1].y;
-    if( theRect.Sz.y < 0.0f ) theRect.Sz.y *= -1.0f;
+ //   theRect.Sz.x = vtx[2].x - vtx[1].x;
+    theRect.Sz.x = ( vtx[2] - vtx[1] ).mag();
+ //   if( theRect.Sz.x < 0.0f ) theRect.Sz.x *= -1.0f;
+  //  theRect.Sz.y = vtx[0].y - vtx[1].y;
+    theRect.Sz.y = ( vtx[0] - vtx[1] ).mag();
+  //  if( theRect.Sz.y < 0.0f ) theRect.Sz.y *= -1.0f;
 
     theRect.Xu = vtx[2] - vtx[1];
     theRect.Xu /= theRect.Xu.mag();
@@ -37,16 +41,28 @@ void persRectangle::setPosition( vec3f Pos )
     pos = Pos;
     for( size_t i = 0; i < 4; ++i )
     {
-        pt[i] += dPos;
-        vtx[i] = persPt::get_xyw( pt[i] );
+        pt[i] += dPos;        
     }
-    setRectCorners();
+    
     update_doDraw();
+    if( doDraw )
+    {
+        for( size_t i = 0; i < 4; ++i )
+            vtx[i] = persPt::get_xyw( pt[i] );
+        setRectCorners();
+    }
 }
 
 void persRectangle::update( float dt )
 {
-    if( isMoving ) pos += vel*dt;
+    if( isMoving )
+    {         
+        vec3f dPos = vel*dt;
+        pos += dPos;
+        for( size_t i = 0; i < 4; ++i )
+            pt[i] += dPos;// maintain relative position
+    }
+
     update_doDraw();
 
     if( !doDraw ) return;
@@ -59,12 +75,12 @@ void persRectangle::update( float dt )
     }
     else
     {
-        if( isMoving )
-        {
-            vec3f dPos = vel*dt;
-            for( size_t i = 0; i < 4; ++i )
-                pt[i] += dPos;
-        }
+      //  if( isMoving )
+       // {
+      //      vec3f dPos = vel*dt;
+      //      for( size_t i = 0; i < 4; ++i )
+      //          pt[i] += dPos;
+      //  }
 
         for( size_t i = 0; i < 4; ++i )
             vtx[i] = persPt::get_xyw( pt[i] );

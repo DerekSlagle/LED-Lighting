@@ -1,5 +1,52 @@
 #include "persLine.h"
 
+// static function
+void persLine::fillBetween( const LineShape& Line1, const LineShape& Line2 )
+{
+    vec2f u1 = Line1.pos2 - Line1.pos;
+    float length1 = u1.mag();
+    u1 /= length1;
+    vec2f u2 = Line2.pos2 - Line2.pos;
+    float length2 = u2.mag();
+    u2/= length2;
+    vec2f it1 = Line1.pos, it2 = Line2.pos;
+    // cross iterator goes from it1 to it2
+    vec2f uX = it2 - it1;
+    float lengthX = uX.mag();// changes
+    uX /= uX.mag();// changes
+    vec2f itX = it1;
+
+    while( true )
+    {
+        bool DoWrite1 = ( it1 - Line1.pos ).mag() <= length1;
+        bool DoWrite2 = ( it2 - Line2.pos ).mag() <= length2;
+        // make a crossing
+        if( DoWrite1 || DoWrite2 )
+        {
+            uX = it2 - it1;
+            lengthX = uX.mag();
+            uX /= uX.mag();
+            itX = it1;
+            float sX = 0.0f;
+            while( sX <= lengthX )
+            {
+                int r = ( itX.y );// + row0;
+                int c = ( itX.x );// + col0;
+                if( (c >= 0 && c < Shape::gridCols) && (r >= 0 && r < Shape::gridRows) )
+                    Shape::pLt0[ r*Shape::gridCols + c ] = Line1.LtClr;// Blend!
+                // for next iter
+                itX += 0.5f*uX;// half steps assure no lamp is missed
+                sX = ( itX - it1 ).mag();
+            }
+
+            // for next iteration
+            if( DoWrite1 ) it1 += 0.5f*u1;
+            if( DoWrite2 ) it2 += 0.5f*u2;
+        }
+        else break;// done
+    }
+}
+
 // persLine
 void persLine::init( vec3f StartPos, vec3f EndPos, Light color )
 {

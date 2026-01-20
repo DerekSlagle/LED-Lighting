@@ -7,6 +7,7 @@
 class persLine
 {
     public:
+    static void fillBetween( const LineShape& Line1, const LineShape& Line2 );
     LineShape theLine;// pos and pos2 assigned in update()
     vec3f startPos, endPos;
     vec3f pt[2];
