@@ -14,56 +14,17 @@ class LineShape : public Shape
   void setup( Light fillColor, int Row0, int Col0, int RowF, int ColF )
   { LtClr = fillColor; pos.y = Row0; pos.x = Col0; pos2.y = RowF; pos2.x = ColF; }
     
-  virtual void draw()const
-  {
-    if( !pLt0 ) return;// no crash
+  virtual void draw()const;
+  void draw2()const;// Bresenham's raster algorithm
 
-    vec2f Udisp = pos2 - pos;
-    float Length = Udisp.mag();
-    Udisp /= Length;// unit vector
-    vec2f Uperp = Udisp.get_LH_norm();// off each way by one for blended Light
-    vec2f currPos = pos;
-    
-    while( (currPos - pos).mag() <= Length )
-    {
-        int cpx = (int)( currPos.x + 0.5f );
-        int cpy = (int)( currPos.y + 0.5f );
+  vec2f get_dIter( vec2f line )const;// helper for draw3()
+  void draw3()const;// anti alias
+  
+  void drawHorizontal( int r, int c0, int cf )const;
+  void drawVertical( int c, int r0, int rf )const;
 
-        int n = gridCols*cpy + cpx;// center
-        if( n >= 0 && n < gridRows*gridCols && cpx >= 0 && cpx < gridCols )
-          pLt0[n] = LtClr;
-
-        if( doBlend )
-        {
-          // LtClr part of blend
-          float redU = blendU*LtClr.r, greenU = blendU*LtClr.g, blueU = blendU*LtClr.b;
-          float blendW = 1.0f - blendU;// existing color share in blend
-          // plus one each side
-          cpx = (int)( currPos.x + Uperp.x + 0.5f );
-          cpy = (int)( currPos.y + Uperp.y + 0.5f );
-          n = gridCols*cpy + cpx;// center
-          if( n >= 0 && n < gridRows*gridCols && cpx >= 0 && cpx < gridCols )
-          {
-            Light blendLt( redU + blendW*pLt0[n].r, greenU + blendW*pLt0[n].g, blueU + blendW*pLt0[n].b );
-            pLt0[n] = blendLt;
-          }
-          // in -Uperp direction
-          cpx = (int)( currPos.x - Uperp.x + 0.5f );
-          cpy = (int)( currPos.y - Uperp.y + 0.5f );
-          n = gridCols*cpy + cpx;// center
-          if( n >= 0 && n < gridRows*gridCols && cpx >= 0 && cpx < gridCols )
-          {
-            Light blendLt( redU + blendW*pLt0[n].r, greenU + blendW*pLt0[n].g, blueU + blendW*pLt0[n].b );
-            pLt0[n] = blendLt;
-          }
-        }
-          
-        currPos += 0.5f*Udisp;
-    }
-  }
-
-    LineShape(){}
-    virtual ~LineShape(){}
+  LineShape(){}
+  virtual ~LineShape(){}
 };
 
 #endif // LINESHAPE_H
