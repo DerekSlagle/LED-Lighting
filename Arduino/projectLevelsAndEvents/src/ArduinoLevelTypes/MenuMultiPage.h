@@ -1,8 +1,6 @@
 #ifndef MENUMULTIPAGE_H
 #define MENUMULTIPAGE_H
 
-#include "ArduinoLevel.h"
-#include "Arduino.h"
 #include "MenuPage.h"
 
 class MenuMultiPage
@@ -60,8 +58,10 @@ class MenuMultiPage
                     pPage[currPage].actButtPressed = false;
                     // assign currLine
                     pPage[n].pCurrLine = pPage[n].pLine;// if > 0 lines
-                    // update display
-                    if( pPage[n].pDoUpdateDisplay ) *pPage[n].pDoUpdateDisplay = true;
+                    // update display                    
+                    if( pPage[n].pDoUpdateDisplay ) *pPage[n].pDoUpdateDisplay = true;// option 1
+                    else if( MenuPage::UpdateDisplay ) MenuPage::UpdateDisplay( pPage[currPage].draw().c_str() );// option 2
+                    
                     break;
                 }
             }
@@ -73,6 +73,10 @@ class MenuMultiPage
 
         return true;// unless Quitting level
     }
+
+    // helper
+    MenuLine* get_pCurrentLine()const
+    { return pPage[currPage].pCurrLine; }
 
     MenuMultiPage(){}
     ~MenuMultiPage()

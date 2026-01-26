@@ -1,6 +1,6 @@
 #include "AL_BasicA.h"
 
-bool AL_BasicA::setup( SSD1306_Display* p_Display )
+bool AL_BasicA::setup()
 {
     
 
@@ -47,9 +47,10 @@ bool AL_BasicA::setup( SSD1306_Display* p_Display )
         
     clearLt.setRGB( 0, 0, 0 );
     
-    pDisplay = p_Display;
+  //  pDisplay = p_Display;
     setupMenu();   
-    updateDisplay();
+    if( MenuPage::UpdateDisplay ) MenuPage::UpdateDisplay( MMP.draw().c_str() );
+ //   updateDisplay();
     
     return true;
 }
@@ -62,17 +63,22 @@ void AL_BasicA::setupMenu()
     FLa_FadeLength.setupBase( "Fade a: ", nullptr, &FLb_Speed );
     FLa_FadeLength.setupFloat( PP[0].fadeLength, 2.0f, 60.0f );
     // make work for 1,2 and 3
-    FLb_Speed.setupBase( "Speed b: ", &doUpSpeed, &FLb_FadeLength );
+    FLb_Speed.setupBase( "Speed b: ", nullptr, &FLb_FadeLength );
     FLb_Speed.setupFloat( PP[1].speed, 1.0f, 100.0f );
     FLb_FadeLength.setupBase( "Fade b: ", &doUpLength, &ML_More );
     FLb_FadeLength.setupFloat( PP[1].fadeLength, 2.0f, 60.0f );
     ML_More.setupBase( "More...", gotoPage + 1, &ML_Quit );// goto Page[1]
     ML_Quit.setupBase( "Quit" );
-    Page[0].setup( " -- Zoomie --", DoUpdateOled, FLa_Speed );
+ //   Page[0].setup( " -- Zoomie --", DoUpdateOled, FLa_Speed );
+    Page[0].setup( " -- Zoomie --", FLa_Speed );
+    // extra for pShowLine
+    IL_numTries.setupBase( "  try: " );
+    IL_numTries.setupInt( numTries, 1, 8 );
+    Page[0].pShowLine = &IL_numTries;
 
     // Page[1] startAll, startAll 2, clearLt colors
-    ML_StartAll.setupBase( "StartAll ", &doStartAll, &ML_StartPairs );
-    ML_StartPairs.setupBase( "StartX2 ", &doStartPairs, &UL_Red );
+    ML_StartAll.setupBase( "StartX3 ", &doStartAll, &ML_StartPairs );
+    ML_StartPairs.setupBase( "Stop/start ", &doStartPairs, &UL_Red );
     UL_Red.setupBase( "Red: ", nullptr, &UL_Green );
     UL_Red.setupUint8_t( clearLt.r, 0, 255 );
     UL_Green.setupBase( "Green: ", nullptr, &UL_Blue );
@@ -81,15 +87,15 @@ void AL_BasicA::setupMenu()
     UL_Blue.setupUint8_t( clearLt.b, 0, 255 );
 
     ML_Back.setupBase( "Back", gotoPage, nullptr );// go home
-    Page[1].setup( " ~ More ~", DoUpdateOled, ML_StartAll );
+    Page[1].setup( " ~ More ~", ML_StartAll );
     MMP.setup( Page, gotoPage, 2 );
 }
 
 bool AL_BasicA::update( float dt )
 {    
     const float minDistSq = 64.0f;// minimum distance between points = 8
-    int nLimit = showFirstOnly ? 1 : numPlayers;
-    for( int n = 0; n < nLimit; ++n )
+    
+    for( int n = 0; n < numPlayers; ++n )
     {
         uint8_t cp = PP[n].currPoint;
         PP[n].update(dt);
@@ -112,7 +118,10 @@ bool AL_BasicA::update( float dt )
                 ++numTries;
             } while ( LsQ < minDistSq );    
             
-            if( n == 0 ) updateDisplay();
+            if( n == 1 )// show value of numTries
+            {
+                if( ArduinoLevel::UpdateDisplay ) ArduinoLevel::UpdateDisplay( MMP.draw().c_str() );
+            }
         }
     }    
     
@@ -125,39 +134,54 @@ void AL_BasicA::draw()const
     for( int n = 0; n < gridRows*gridCols; ++n )
         pLt0[n] = clearLt;
     
-    int nLimit = showFirstOnly ? 1 : numPlayers;
-    for( int n = 0; n < nLimit; ++n )
-        PP[n].draw();
+    for( int n = 0; n < numPlayers; ++n )
+    {
+        if( do_draw2 )
+            PP[n].draw2();// new
+        else
+            PP[n].draw();// existing
+    }
 }
 
 bool AL_BasicA::handleEvent( ArduinoEvent& AE )
 {    
   //  if( !thePage.handleEvent( AE ) ) return false;
     if( !MMP.handleEvent( AE ) ) return false;
-    if( DoUpdateOled )
-    {
-        DoUpdateOled = false;
-        updateDisplay();
-    }
 
-    const MenuLine* pCurrLn = MMP.pPage[ MMP.currPage ].pCurrLine;
+    const MenuLine* pCurrLn = MMP.get_pCurrentLine();
     // assign new vel right away
     if( AE.ID == FLa_Speed.rotEncID && AE.type == 2 )
     {
-        if( pCurrLn == &FLa_Speed ) PP[0].vel = PP[0].uCurr*PP[0].speed;
-        else if( pCurrLn == &FLb_Speed ) PP[1].vel = PP[1].uCurr*PP[1].speed;
+      //  if( pCurrLn == &FLa_Speed ) PP[0].vel = PP[0].uCurr*PP[0].speed;
+        if( pCurrLn == &FLb_Speed )
+        {
+          //  PP[1].vel = PP[1].uCurr*PP[1].speed;
+            for( int n = 2; n < numPlayers; ++n )// match PP[1]
+            {       
+                PP[n].speed = PP[1].speed;
+           //     PP[n].vel = PP[n].uCurr*PP[n].speed;
+            }
+        }
     }
 
     // actButt pressed
-    if( pCurrLn == Page[0].pLine && AE.ID == FLa_Speed.actButtID && AE.type == 1 )// 1st line = speed
+    if( AE.ID == FLa_Speed.actButtID && AE.type == 1 )// 1st line = speed
     {
-        showFirstOnly = !showFirstOnly;// toggle
+        if( pCurrLn == &FLa_Speed )
+        {   // start or stop PP[0]
+            if( PP[0].isPlaying ) PP[0].Stop();
+            else PP[0].Start();
+        }
+        else if( pCurrLn == &FLb_Speed )
+        {
+            do_draw2 = !do_draw2;// toggle which draw() is called
+        }
     }
 
     if( doStartAll )
     {
         doStartAll = false;
-        showFirstOnly = false;
+     
         uint8_t startX = ( rand()%2 == 1 ) ? gridCols - 3 : 2;
         uint8_t startY = ( rand()%2 == 1 ) ? gridRows - 3 : 2;
         for( int n = 1; n < numPlayers; ++n )
@@ -173,59 +197,19 @@ bool AL_BasicA::handleEvent( ArduinoEvent& AE )
                 PathX[nPtEach*n+j] = ( j%2 == 1 ) ? 2 : gridCols - 3;
                 PathY[nPtEach*n+j] = 2;
             }
-
+            
             PP[n].Start();
         }
     }
     else if( doStartPairs )// 1 triplet
     {
         doStartPairs = false;
-        showFirstOnly = false;
-        // one pair from each bottom corner
-        uint8_t stXa = ( rand()%2 == 1 ) ? gridCols - 3 : 2;// 29 or 2 for PP 0,1        
-        // start point: for a: 0,1
-      //  PathX[0] = stXa; PathY[0] = gridRows - 3;// 1st point for PP[0]
-        PathX[nPtEach] = stXa; PathY[nPtEach] = gridRows - 3;// 1st point for PP[1]
-        // for b: 2,3
-    //    uint8_t stXb = ( stXa == 2 ) ? gridCols - 3 : 2;// 29 or 2  for PP 2,3
-        PathX[2*nPtEach] = stXa; PathY[2*nPtEach] = gridRows - 3;// 1st point for PP[2]
-        PathX[3*nPtEach] = stXa; PathY[3*nPtEach] = gridRows - 3;// 1st point for PP[3]
-        // 2nd point = middle of grid = same for all
-        for( int n = 1; n < numPlayers; ++n )// numPlayers
-        {
-            PathX[nPtEach*n+1] = gridCols/2;
-            PathY[nPtEach*n+1] = gridRows/2;
-        }
-        // 3rd point to middle of opposing quadrant: y = 8 = gridRows/4
-        uint8_t endXa = ( stXa == 2 ) ? gridCols - 3 : 2;
-        // end point: for a: 0,1
-  //      PathX[2] = endXa; PathY[2] = gridRows/4;// 3rd point for PP[0]
-        PathX[2+nPtEach] = endXa; PathY[2+nPtEach] = gridRows/4;// 3rd point for PP[1]
-        // end point: for b: 2,3
-    //    uint8_t endXb = ( endXa == 2 ) ? gridCols - 3 : 2;
-        PathX[2*nPtEach+2] = endXa; PathY[2*nPtEach+2] = gridRows/4;// 3rd point for PP[2]
-        PathX[3*nPtEach+2] = endXa; PathY[3*nPtEach+2] = gridRows/4;// 3rd point for PP[3]
 
-        // for Safety: assign last points to up left so last leg length != 0
-        for( int n = 1; n < numPlayers; ++n )
-        {
-            for( int j = 3; j < nPtEach; ++j )
-            {   // alternate ends
-                PathX[nPtEach*n+j] = ( j%2 == 1 ) ? 2 : gridCols - 3;
-                PathY[nPtEach*n+j] = 2;// near the top
-            }
-            PP[n].Start();
-        }
-    }
-    else if( doUpSpeed )
-    {
-        doUpSpeed = false;
-     //   PP[1].vel = PP[1].uCurr*PP[1].speed;// already done above
-        for( int n = 2; n < numPlayers; ++n )// match PP[1]
-        {       
-            PP[n].speed = PP[1].speed;
-            PP[n].vel = PP[n].uCurr*PP[n].speed;
-        }
+        // start or stop PP 1,2,3
+        if( PP[1].isPlaying )
+        { PP[1].Stop(); PP[2].Stop(); PP[3].Stop(); }
+        else
+        { PP[1].Start(); PP[2].Start(); PP[3].Start(); }
     }
     else if( doUpLength )
     {
@@ -235,16 +219,4 @@ bool AL_BasicA::handleEvent( ArduinoEvent& AE )
     }
 
     return true;
-}
-
-void AL_BasicA::updateDisplay()const
-{
-    if( !pDisplay ) return;// crash avoidance
-    String msg = MMP.draw();
-    // write
-    msg += "  ";
-    msg += numTries;
-    pDisplay->clear();
-    pDisplay->printAt( 0, 0, msg.c_str(), 1 );
-    pDisplay->show();
 }

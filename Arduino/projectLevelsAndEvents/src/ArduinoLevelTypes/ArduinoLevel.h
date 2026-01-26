@@ -2,6 +2,7 @@
 #define ARDUINOLEVEL_H
 
 #include "ArduinoEvent.h"
+#include "Arduino.h"// for type String
 
 // base class for levels targeting Arduino
 class ArduinoLevel
@@ -10,8 +11,14 @@ class ArduinoLevel
     // play/pause calls to update(). Allow 1 call at a time when paused
     static bool run_update, step_update;
     static ArduinoLevel* pCurrLvl;
+    // for a display
+  //  static void ( *UpdateDisplay )(void);
+    static void ( *UpdateDisplay )( const char* );
+
     // static SD* in VS code for access to SD drive
     // read setup data from files?
+    // include type FileParser
+
     static bool update_stat( float dt );
     static void draw_stat();
 

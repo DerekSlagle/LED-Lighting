@@ -55,7 +55,7 @@ class FloatLine : public MenuLine
         return false;
     }
 
-    void setupFloat( float& Value, float MinVal, float MaxVal )
+    void setupFloat( float& Value, float MinVal, float MaxVal, float inScale = 1.0f )
     {
         pfVal = &Value;
         iVal = Value;

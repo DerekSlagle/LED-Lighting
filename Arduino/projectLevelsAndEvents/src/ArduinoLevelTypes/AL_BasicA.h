@@ -4,10 +4,11 @@
 #include "Arduino.h"// for type String in updateDisplay()
 #include "ArduinoLevel.h"
 #include "../LightSourceTypes/LightGrid.h"
-#include "../SSD_1306Component.h"// use a display
+//#include "../SSD_1306Component.h"// use a display
 #include "LightTypes/PointPlayer.h"
 #include "MenuMultiPage.h"
 #include "FloatLine.h"
+#include "IntegerLine.h"
 #include "Uint8_tLine.h"
 
 class AL_BasicA : public ArduinoLevel
@@ -27,7 +28,6 @@ class AL_BasicA : public ArduinoLevel
     static const int nPtEach = 16;
     static const int numPoints = 64;
     uint8_t PathX[64], PathY[64];// 16 for each of 4
-    bool showFirstOnly = false;
     
     // path point assigned randomly ahead
     int numTries = 0;// watching on oled
@@ -39,21 +39,27 @@ class AL_BasicA : public ArduinoLevel
     // Page[0]
     FloatLine FLa_Speed, FLa_FadeLength;// PP[0]
     FloatLine FLb_Speed, FLb_FadeLength;// all 3 others
-    bool doUpSpeed = false, doUpLength = false;
+    bool doUpLength = false;
     MenuLine ML_More;// gotoPage + 1
     MenuLine ML_Quit;
+    // for pShowLine feature
+    IntegerLine IL_numTries;// displays value
+
+
     // Page[1] 
     MenuLine ML_StartAll, ML_StartPairs;
     bool doStartAll = false, doStartPairs = false;// for above
     Uint8_tLine UL_Red, UL_Green, UL_Blue;// for clearLt
     MenuLine ML_Back;
     void setupMenu();
+    bool do_draw2 = false;
 
-    SSD1306_Display* pDisplay = nullptr;
-    bool DoUpdateOled = false;// menu writes
-    void updateDisplay()const;
+ //   SSD1306_Display* pDisplay = nullptr;
+ //   bool DoUpdateOled = false;// menu writes
+ //   void updateDisplay()const;
+ //   virtual String toDisplay()const{ return MMP.draw(); }
 
-    bool setup( SSD1306_Display* p_Display );
+    bool setup();
     virtual bool update( float dt );
     virtual void draw()const;
     virtual bool handleEvent( ArduinoEvent& AE );
