@@ -194,8 +194,8 @@ void PointPlayer::draw3()const
 
     while( trailDist < fadeLength )
     {
-        if( x0 >= 0 && x0 < gridCols && y0 >= 0 && y0 < gridRows )
-            pLt0[ y0*gridCols + x0 ] = ptColor;   
+      //  if( x0 >= 0 && x0 < gridCols && y0 >= 0 && y0 < gridRows )
+      //      pLt0[ y0*gridCols + x0 ] = ptColor;   
         
         for( vec2f iter = P0; ( Pf - iter ).dot( line ) >= 0.0f;  iter += dIter )// until iter passes Pf
         {
@@ -214,34 +214,49 @@ void PointPlayer::draw3()const
             { if( line.x > 0.0f ) break; else continue; }
 
             float U = trailDist/fadeLength;// fade factor
+            float W = 1.0f - U;
 
             if( steep )// write to left and right of the line
             {
+                int n = r*gridCols + c;
+                // vertical case. Write to just 1 Light
+                if( x0 == xf )
+                {
+                    pLt0[n] = Light( W*ptColor.r + U*pLt0[n].r, W*ptColor.g + U*pLt0[n].g, W*ptColor.b + U*pLt0[n].b );
+                    continue;
+                }
                 // weights for Light colors
                 float fx = iter.x - c, rfx = 1.0f - fx;// fraction and remaining fraction                
-                rfx *= U;// apply fade factor
-                fx = 1.0f - rfx;
-                int n = r*gridCols + c;
-                pLt0[n] = Light( rfx*ptColor.r + fx*pLt0[n].r, rfx*ptColor.g + fx*pLt0[n].g, rfx*ptColor.b + fx*pLt0[n].b );
+                float Q = rfx*W, R = rfx*U + fx;                
+                pLt0[n] = Light( Q*ptColor.r + R*pLt0[n].r, Q*ptColor.g + R*pLt0[n].g, Q*ptColor.b + R*pLt0[n].b );
                 // 2nd to right since floor went to left            
                 if( ++c < gridCols )
                 {   // apply other fraction
                     ++n;
-                    pLt0[n] = Light( fx*ptColor.r + rfx*pLt0[n].r, fx*ptColor.g + rfx*pLt0[n].g, fx*ptColor.b + rfx*pLt0[n].b );
+                    Q = fx*W;
+                    R = fx*U + rfx;
+                    pLt0[n] = Light( Q*ptColor.r + R*pLt0[n].r, Q*ptColor.g + R*pLt0[n].g, Q*ptColor.b + R*pLt0[n].b );
                 }
             }
             else// write above and below
             {
-                float fy = iter.y - r, rfy = 1.0f - fy;// fraction and remaining fraction
-                rfy *= U;// apply fade factor
-                fy = 1.0f - rfy;
                 int n = r*gridCols + c;
-                pLt0[n] = Light( rfy*ptColor.r + fy*pLt0[n].r, rfy*ptColor.g + fy*pLt0[n].g, rfy*ptColor.b + fy*pLt0[n].b );
+                // horizontal case. Write to just 1 Light
+                if( y0 == yf )
+                {
+                    pLt0[n] = Light( W*ptColor.r + U*pLt0[n].r, W*ptColor.g + U*pLt0[n].g, W*ptColor.b + U*pLt0[n].b );
+                    continue;
+                }
+                float fy = iter.y - r, rfy = 1.0f - fy;// fraction and remaining fraction               
+                float Q = rfy*W, R = rfy*U + fy;                
+                pLt0[n] = Light( Q*ptColor.r + R*pLt0[n].r, Q*ptColor.g + R*pLt0[n].g, Q*ptColor.b + R*pLt0[n].b );
                 // 2nd below since floor went up            
                 if( ++r < gridRows )
                 {   // apply other fraction
                     n += gridCols;
-                    pLt0[n] = Light( fy*ptColor.r + rfy*pLt0[n].r, fy*ptColor.g + rfy*pLt0[n].g, fy*ptColor.b + rfy*pLt0[n].b );
+                    Q = fy*W;
+                    R = fy*U + rfy;
+                    pLt0[n] = Light( Q*ptColor.r + R*pLt0[n].r, Q*ptColor.g + R*pLt0[n].g, Q*ptColor.b + R*pLt0[n].b );
                 }
             }
 
@@ -253,8 +268,8 @@ void PointPlayer::draw3()const
         // will write to end Lights last
      //   
 
-        if( xf >= 0 && xf < gridCols && yf >= 0 && yf < gridRows )
-            pLt0[ yf*gridCols + xf ] = ptColor;
+//        if( xf >= 0 && xf < gridCols && yf >= 0 && yf < gridRows )
+   //         pLt0[ yf*gridCols + xf ] = ptColor;
 
         // next line segment
         P0.x = x0 = xf;
